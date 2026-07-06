@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CineTracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0B0E23;
+    --bg-panel:#141935;
+    --bg-panel-2:#1B2147;
+    --marquee-gold:#FFC857;
+    --hot-pink:#FF4D9D;
+    --cyan-glow:#4DE8F4;
+    --text-light:#F5F3ED;
+    --muted:#9096C0;
+    --border-soft:rgba(255,255,255,0.08);
+    --green-ok:#4ADE80;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg-deep);color:var(--text-light);font-family:'Manrope',sans-serif;min-height:100vh;}
+  ::selection{background:var(--hot-pink);color:#0B0E23;}
+  h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:0.03em;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  /* ===== MARQUEE HEADER ===== */
+  .marquee-wrap{position:relative;background:repeating-linear-gradient(135deg, #1B2147, #1B2147 12px, #171C40 12px, #171C40 24px);
+    border-bottom:3px solid var(--marquee-gold);overflow:hidden;}
+  .bulb-row{display:flex;justify-content:space-between;padding:6px 14px 0;}
+  .bulb-row.bottom{padding:0 14px 6px;}
+  .bulb{width:7px;height:7px;border-radius:50%;background:var(--marquee-gold);
+    box-shadow:0 0 6px 2px rgba(255,200,87,0.7);animation:twinkle 1.6s infinite ease-in-out;}
+  @keyframes twinkle{0%,100%{opacity:1;}50%{opacity:0.25;}}
+  .marquee-inner{padding:18px 24px 22px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;}
+  .brand h1{font-size:clamp(2.4rem,6vw,3.6rem);margin:0;line-height:0.9;
+    background:linear-gradient(90deg,var(--marquee-gold),var(--hot-pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .brand p{margin:4px 0 0;color:var(--muted);font-size:0.85rem;}
+  .header-controls{display:flex;gap:10px;align-items:center;}
+  .lang-toggle{display:flex;border:1px solid var(--border-soft);border-radius:999px;overflow:hidden;}
+  .lang-toggle button{background:transparent;border:none;color:var(--muted);padding:7px 14px;cursor:pointer;
+    font-weight:700;font-size:0.78rem;font-family:'Manrope',sans-serif;transition:.2s;}
+  .lang-toggle button.active{background:var(--marquee-gold);color:#0B0E23;}
+  .ticker{background:var(--bg-deep);border-top:1px solid var(--border-soft);overflow:hidden;white-space:nowrap;padding:6px 0;}
+  .ticker span{display:inline-block;padding-left:100%;animation:tick 26s linear infinite;color:var(--cyan-glow);font-size:0.78rem;font-family:'JetBrains Mono',monospace;}
+  @keyframes tick{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
+
+  /* ===== NAV TABS ===== */
+  .tabs{display:flex;gap:8px;padding:18px 24px 0;flex-wrap:wrap;max-width:1200px;margin:0 auto;}
+  .tab-btn{background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--muted);
+    padding:10px 18px;border-radius:12px 12px 0 0;cursor:pointer;font-weight:700;font-size:0.85rem;
+    font-family:'Manrope',sans-serif;transition:.2s;}
+  .tab-btn.active{background:var(--bg-panel-2);color:var(--text-light);border-bottom-color:var(--bg-panel-2);
+    box-shadow:0 -2px 0 var(--hot-pink) inset;}
+  .container{max-width:1200px;margin:0 auto;padding:0 24px 60px;}
+  .panel{background:var(--bg-panel-2);border:1px solid var(--border-soft);border-radius:0 14px 14px 14px;padding:26px;margin-bottom:20px;}
+  section.view{display:none;}
+  section.view.active{display:block;}
+  .section-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .subhead{display:flex;align-items:center;gap:8px;margin:22px 0 12px;font-size:1.1rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-family:'Manrope',sans-serif;font-weight:800;}
+  .subhead .dash{flex:1;height:1px;background:var(--border-soft);}
+
+  /* ===== STATS ===== */
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
+  .stat-card{background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--cyan-glow);}
+  .stat-card.pink::before{background:var(--hot-pink);}
+  .stat-card.gold::before{background:var(--marquee-gold);}
+  .stat-card.green::before{background:var(--green-ok);}
+  .stat-num{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:700;}
+  .stat-label{color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+
+  /* ===== MOOD PICKER ===== */
+  .mood-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0 22px;}
+  .mood-btn{background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--text-light);
+    padding:14px 10px;border-radius:12px;cursor:pointer;font-weight:600;font-size:0.85rem;transition:.2s;text-align:center;}
+  .mood-btn:hover{border-color:var(--hot-pink);transform:translateY(-2px);}
+  .mood-btn.selected{background:var(--hot-pink);border-color:var(--hot-pink);color:#0B0E23;}
+  .mood-emoji{font-size:1.5rem;display:block;margin-bottom:4px;}
+
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;}
+  .movie-card{background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:12px;overflow:hidden;transition:.2s;position:relative;}
+  .movie-card:hover{transform:translateY(-4px);border-color:var(--cyan-glow);}
+  .movie-card .poster-wrap{position:relative;cursor:pointer;}
+  .movie-card img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:var(--bg-panel-2);}
+  .seen-btn{position:absolute;top:6px;right:6px;background:rgba(11,14,35,0.85);border:1px solid var(--border-soft);
+    color:var(--text-light);border-radius:999px;padding:4px 9px;font-size:0.68rem;cursor:pointer;font-weight:700;transition:.2s;}
+  .seen-btn:hover{background:var(--green-ok);color:#0B0E23;border-color:var(--green-ok);}
+  .seen-btn.is-seen{background:var(--green-ok);color:#0B0E23;border-color:var(--green-ok);}
+  .movie-card .mc-body{padding:10px 12px;cursor:pointer;}
+  .movie-card .mc-title{font-weight:700;font-size:0.86rem;line-height:1.2;margin-bottom:4px;}
+  .movie-card .mc-meta{color:var(--muted);font-size:0.72rem;display:flex;justify-content:space-between;}
+  .rating-pill{background:var(--marquee-gold);color:#0B0E23;padding:1px 7px;border-radius:999px;font-weight:700;}
+
+  /* ===== TICKET STUB (mi lista) ===== */
+  .ticket{display:flex;background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:14px;overflow:hidden;margin-bottom:14px;position:relative;}
+  .ticket-poster{width:90px;flex-shrink:0;object-fit:cover;background:var(--bg-panel-2);cursor:pointer;}
+  .ticket-perf{width:0;border-left:2px dashed rgba(255,255,255,0.15);position:relative;}
+  .ticket-perf::before,.ticket-perf::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:var(--bg-deep);left:-8px;}
+  .ticket-perf::before{top:-7px;}
+  .ticket-perf::after{bottom:-7px;}
+  .ticket-body{flex:1;padding:14px 16px;}
+  .ticket-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .ticket-title{font-weight:800;font-size:1.05rem;cursor:pointer;}
+  .ticket-tag{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);}
+  .status-badge{font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;}
+  .status-watching{background:rgba(77,232,244,0.15);color:var(--cyan-glow);}
+  .status-completed{background:rgba(74,222,128,0.15);color:var(--green-ok);}
+  .status-planned{background:rgba(255,200,87,0.15);color:var(--marquee-gold);}
+  .ticket-review{margin-top:8px;color:var(--text-light);font-size:0.86rem;font-style:italic;line-height:1.4;}
+  .ticket-actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
+  .stars{color:var(--marquee-gold);letter-spacing:2px;}
+  .filter-pills{display:flex;gap:8px;margin-bottom:16px;}
+  .filter-pill{background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--muted);padding:6px 14px;
+    border-radius:999px;cursor:pointer;font-size:0.78rem;font-weight:700;}
+  .filter-pill.active{background:var(--cyan-glow);color:#0B0E23;border-color:var(--cyan-glow);}
+
+  /* ===== FORMS ===== */
+  input,select,textarea{width:100%;background:var(--bg-panel);border:1px solid var(--border-soft);color:var(--text-light);
+    padding:10px 12px;border-radius:8px;font-family:'Manrope',sans-serif;font-size:0.9rem;}
+  textarea{resize:vertical;min-height:70px;}
+  label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:5px;}
+  .field{margin-bottom:14px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  button.btn{cursor:pointer;border:none;border-radius:8px;padding:10px 18px;font-weight:700;font-size:0.85rem;font-family:'Manrope',sans-serif;transition:.2s;}
+  .btn-primary{background:linear-gradient(90deg,var(--hot-pink),var(--marquee-gold));color:#0B0E23;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent;border:1px solid var(--border-soft);color:var(--text-light);}
+  .btn-ghost:hover{border-color:var(--cyan-glow);color:var(--cyan-glow);}
+  .btn-sm{padding:6px 12px;font-size:0.75rem;}
+
+  .search-results{max-height:280px;overflow-y:auto;border:1px solid var(--border-soft);border-radius:8px;margin-top:6px;}
+  .sr-item{display:flex;gap:10px;padding:8px 10px;cursor:pointer;align-items:center;border-bottom:1px solid var(--border-soft);}
+  .sr-item:hover{background:var(--bg-panel);}
+  .sr-item img{width:36px;height:54px;object-fit:cover;border-radius:4px;background:var(--bg-panel-2);}
+  .sr-item .sr-title{font-weight:700;font-size:0.85rem;}
+  .sr-item .sr-year{color:var(--muted);font-size:0.72rem;}
+
+  .cinema-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+  .cinema-link{display:flex;align-items:center;gap:8px;background:var(--bg-panel);border:1px solid var(--border-soft);
+    padding:12px 18px;border-radius:12px;text-decoration:none;color:var(--text-light);font-weight:700;transition:.2s;}
+  .cinema-link:hover{border-color:var(--marquee-gold);color:var(--marquee-gold);}
+
+  /* ===== BADGES / TASTE CHART / VOCAB ===== */
+  .badge-card{background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:12px;padding:16px 12px;text-align:center;opacity:0.35;filter:grayscale(1);}
+  .badge-card.unlocked{opacity:1;filter:none;border-color:var(--marquee-gold);}
+  .badge-icon{font-size:2rem;display:block;margin-bottom:6px;}
+  .badge-title{font-weight:800;font-size:0.82rem;}
+  .badge-desc{color:var(--muted);font-size:0.7rem;margin-top:3px;}
+  .taste-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .taste-bar-label{width:110px;flex-shrink:0;font-size:0.82rem;font-weight:700;}
+  .taste-bar-track{flex:1;background:var(--bg-panel);border-radius:999px;height:14px;overflow:hidden;}
+  .taste-bar-fill{height:100%;background:linear-gradient(90deg,var(--hot-pink),var(--marquee-gold));border-radius:999px;}
+  .taste-bar-count{width:34px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--muted);}
+  .vocab-card{background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:12px;padding:18px;margin-bottom:12px;}
+  .vocab-original{font-size:0.95rem;margin-bottom:10px;}
+  .vocab-original strong{color:var(--hot-pink);}
+  .vocab-corrected{background:rgba(74,222,128,0.08);border-left:3px solid var(--green-ok);padding:8px 12px;border-radius:6px;font-size:0.9rem;margin-bottom:10px;display:none;}
+  .vocab-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .provider-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;}
+  .provider-chip{display:flex;align-items:center;gap:6px;background:var(--bg-panel);border:1px solid var(--border-soft);padding:4px 10px;border-radius:999px;font-size:0.75rem;}
+  .provider-chip img{width:18px;height:18px;border-radius:4px;}
+
+  .wrapped-panel{background:linear-gradient(135deg, #1B2147 0%, #241a3e 60%, #2b1530 100%);border:1px solid rgba(255,200,87,0.25);}
+  .wrapped-hero{display:flex;gap:18px;align-items:center;background:rgba(0,0,0,0.25);border-radius:14px;padding:16px;margin-bottom:16px;flex-wrap:wrap;}
+  .wrapped-hero img{width:90px;border-radius:10px;object-fit:cover;flex-shrink:0;}
+  .wrapped-hero-title{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:0.02em;}
+  .wrapped-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;}
+  .wrapped-stat{background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;}
+  .wrapped-stat .ws-num{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:700;color:var(--marquee-gold);}
+  .wrapped-stat .ws-label{color:var(--muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;}
+
+  .recap-box{background:var(--bg-panel);border-left:3px solid var(--hot-pink);border-radius:10px;padding:16px 18px;font-size:0.92rem;line-height:1.6;}
+  .recap-date{color:var(--muted);font-size:0.72rem;margin-top:10px;}
+
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted);grid-column:1/-1;}
+  .empty-state .emoji{font-size:2.4rem;display:block;margin-bottom:10px;}
+
+  .grammar-box{background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.3);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:0.85rem;}
+  .grammar-box .gb-label{color:var(--green-ok);font-weight:700;font-size:0.7rem;text-transform:uppercase;margin-bottom:4px;}
+
+  .settings-note{color:var(--muted);font-size:0.8rem;line-height:1.5;margin-top:6px;}
+  .key-status{display:inline-flex;align-items:center;gap:6px;font-size:0.78rem;margin-top:6px;}
+  .dot{width:8px;height:8px;border-radius:50%;}
+  .dot.ok{background:var(--green-ok);}
+  .dot.bad{background:var(--hot-pink);}
+
+  .loader{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:var(--marquee-gold);border-radius:50%;animation:spin 0.7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ===== MODAL ===== */
+  .modal-overlay{position:fixed;inset:0;background:rgba(5,6,16,0.75);backdrop-filter:blur(3px);z-index:100;
+    display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal-box{background:var(--bg-panel-2);border:1px solid var(--border-soft);border-radius:16px;max-width:820px;width:100%;
+    max-height:88vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+  .modal-close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.4);border:1px solid var(--border-soft);
+    color:var(--text-light);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;z-index:2;}
+  .modal-close:hover{background:var(--hot-pink);color:#0B0E23;}
+  .modal-hero{display:flex;gap:18px;padding:24px;border-bottom:1px solid var(--border-soft);flex-wrap:wrap;}
+  .modal-hero img{width:140px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--bg-panel);}
+  .modal-hero-info{flex:1;min-width:200px;}
+  .modal-hero-info h2{font-size:2rem;margin:0 0 6px;}
+  .modal-genres{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px;}
+  .genre-chip{background:var(--bg-panel);border:1px solid var(--border-soft);padding:2px 10px;border-radius:999px;font-size:0.72rem;color:var(--muted);}
+  .modal-overview{color:var(--text-light);font-size:0.9rem;line-height:1.5;}
+  .modal-review-block{background:var(--bg-panel);border-left:3px solid var(--cyan-glow);border-radius:6px;padding:10px 14px;margin-top:12px;font-size:0.85rem;font-style:italic;color:var(--muted);}
+  .modal-body-form{padding:22px 24px;}
+  .quick-seen-btn{margin-bottom:16px;}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--bg-panel-2);border-radius:8px;}
+
+  @media(max-width:640px){
+    .field-row{grid-template-columns:1fr;}
+    .ticket{flex-direction:row;}
+    .ticket-poster{width:70px;}
+    .modal-hero{flex-direction:column;}
+    .modal-hero img{width:100px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="marquee-wrap">
+  <div class="bulb-row" id="bulbTop"></div>
+  <div class="marquee-inner">
+    <div class="brand">
+      <h1 id="t-title">CINE·TRACKER</h1>
+      <p id="t-tagline">Tu cartelera personal — cine, series y estrenos</p>
+    </div>
+    <div class="header-controls">
+      <div class="lang-toggle">
+        <button data-lang="es" class="active" id="btnLangEs">ES</button>
+        <button data-lang="en" id="btnLangEn">EN</button>
+      </div>
+    </div>
+  </div>
+  <div class="bulb-row bottom" id="bulbBottom"></div>
+  <div class="ticker"><span id="tickerText">Cargando próximos estrenos...</span></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-view="today" id="tab-today">🎬 <span id="t-tab-today">Hoy veo</span></button>
+  <button class="tab-btn" data-view="premieres" id="tab-premieres">🍿 <span id="t-tab-premieres">Estrenos</span></button>
+  <button class="tab-btn" data-view="mylist" id="tab-mylist">🎟️ <span id="t-tab-mylist">Mi lista</span></button>
+  <button class="tab-btn" data-view="perfil" id="tab-perfil">🏆 <span id="t-tab-perfil">Mi perfil</span></button>
+  <button class="tab-btn" data-view="settings" id="tab-settings">⚙️ <span id="t-tab-settings">Ajustes</span></button>
+</div>
+
+<div class="container">
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- ===== VIEW: HOY ===== -->
+  <section class="view active" id="view-today">
+    <div class="panel" id="surprisePanel" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+      <div>
+        <h2 style="margin:0;" id="t-surprise-h">¿No sabes qué elegir?</h2>
+        <p class="settings-note" id="t-surprise-sub" style="margin-top:4px;">Te elegimos algo basado en tu perfil de gustos.</p>
+      </div>
+      <button class="btn btn-primary" id="btnSurpriseMe">🎲 <span id="t-surprise-btn">Sorpréndeme</span></button>
+    </div>
+
+    <div class="panel" id="recoPanel" style="display:none;">
+      <div class="section-title"><h2 id="t-reco-h">Recomendado para ti</h2></div>
+      <p class="settings-note" id="recoNote"></p>
+      <div class="subhead" id="recoMoviesHead" style="display:none;">🎬 <span id="t-reco-movies">Películas</span><div class="dash"></div></div>
+      <div class="card-grid" id="recoMoviesGrid"></div>
+      <div class="subhead" id="recoSeriesHead" style="display:none;">📺 <span id="t-reco-series">Series</span><div class="dash"></div></div>
+      <div class="card-grid" id="recoSeriesGrid"></div>
+    </div>
+
+    <div class="panel">
+      <h2 id="t-mood-q">¿Qué te provoca ver hoy?</h2>
+      <div class="mood-grid" id="moodGrid"></div>
+      <div id="moodEmpty"></div>
+      <div id="moodRefreshWrap" style="display:none;justify-content:flex-end;margin-bottom:6px;">
+        <button class="btn btn-ghost btn-sm" id="btnRefreshMood">🔀 <span id="t-refresh-btn">Ninguna me llama, ver otras</span></button>
+      </div>
+      <div class="subhead" id="moodMoviesHead" style="display:none;">🎬 <span id="t-mood-movies">Películas</span><div class="dash"></div></div>
+      <div class="card-grid" id="moodMoviesGrid"></div>
+      <div class="subhead" id="moodSeriesHead" style="display:none;">📺 <span id="t-mood-series">Series</span><div class="dash"></div></div>
+      <div class="card-grid" id="moodSeriesGrid"></div>
+    </div>
+
+    <div class="panel" id="becauseWatchedPanel" style="display:none;">
+      <div id="becauseWatchedContainer"></div>
+    </div>
+
+    <div class="panel" id="watchedStripPanel" style="display:none;">
+      <div class="section-title">
+        <h2 id="t-watched-h">Vistas recientemente</h2>
+        <button class="btn btn-ghost btn-sm" id="btnGoToMyList" data-view="mylist"><span id="t-see-all">Ver mi lista</span></button>
+      </div>
+      <div class="card-grid" id="watchedStripGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: ESTRENOS ===== -->
+  <section class="view" id="view-premieres">
+    <div class="panel">
+      <h2 id="t-premieres-h">Próximos estrenos</h2>
+      <div class="field" style="max-width:420px;">
+        <input type="text" id="premieresSearchInput" placeholder="Buscar cualquier título...">
+        <div class="search-results" id="premieresSearchResults" style="display:none;"></div>
+      </div>
+      <div class="card-grid" id="premieresGrid"></div>
+    </div>
+    <div class="panel">
+      <h2 id="t-cines-h">Ver cartelera en Venezuela</h2>
+      <p class="settings-note" id="t-cines-note">TMDB no tiene horarios de cines venezolanos, pero te llevamos directo a la cartelera:</p>
+      <div class="cinema-links">
+        <a class="cinema-link" href="https://www.cinesunidos.com/cartelera" target="_blank" rel="noopener">🎫 Cines Unidos</a>
+        <a class="cinema-link" href="https://cinex.com.ve/" target="_blank" rel="noopener">🎫 Cinex</a>
+        <a class="cinema-link" href="https://www.cinemark.com.ve/" target="_blank" rel="noopener">🎫 Cinemark VE</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: MI LISTA ===== -->
+  <section class="view" id="view-mylist">
+    <div class="panel">
+      <h2 id="t-add-h">Buscar y añadir a mi lista</h2>
+      <div class="field">
+        <label id="t-search-label">Buscar película o serie</label>
+        <input type="text" id="searchInput" placeholder="Ej: Interstellar, Merlí...">
+        <div class="search-results" id="searchResults" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title"><h2 id="t-mylist-h">Mi lista</h2></div>
+      <div class="filter-pills" id="listFilterPills">
+        <button class="filter-pill active" data-f="all" id="fp-all">Todo</button>
+        <button class="filter-pill" data-f="movie" id="fp-movie">🎬 Películas</button>
+        <button class="filter-pill" data-f="tv" id="fp-tv">📺 Series</button>
+      </div>
+      <div class="field-row" style="margin-bottom:16px;">
+        <div class="field">
+          <label id="t-filter-genre">Género</label>
+          <select id="filterGenre"><option value="">—</option></select>
+        </div>
+        <div class="field">
+          <label id="t-filter-year">Año</label>
+          <select id="filterYear"><option value="">—</option></select>
+        </div>
+        <div class="field">
+          <label id="t-filter-rating">Calificación mínima</label>
+          <select id="filterRating">
+            <option value="0">—</option>
+            <option value="1">★+</option>
+            <option value="2">★★+</option>
+            <option value="3">★★★+</option>
+            <option value="4">★★★★+</option>
+            <option value="5">★★★★★</option>
+          </select>
+        </div>
+      </div>
+      <div id="myListContainer"></div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: PERFIL ===== -->
+  <section class="view" id="view-perfil">
+    <div class="panel">
+      <div class="stats-row" id="streakRow"></div>
+    </div>
+
+    <div class="panel wrapped-panel">
+      <div class="section-title">
+        <h2 id="t-wrapped-h">🎁 Tu año en cine</h2>
+        <select id="wrappedYearSelect" style="max-width:160px;"></select>
+      </div>
+      <div id="wrappedContent"></div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">
+        <h2 id="t-recap-h">🤖 Recapitulación semanal</h2>
+        <button class="btn btn-ghost btn-sm" id="btnGenRecap"><span id="t-recap-btn">Generar</span></button>
+      </div>
+      <p class="settings-note" id="t-recap-note">Un resumen corto generado con IA sobre tu semana, basado en lo que has visto y calificado.</p>
+      <div id="recapContent"></div>
+    </div>
+
+    <div class="panel">
+      <h2 id="t-taste-h">Tu perfil de gustos</h2>
+      <p class="settings-note" id="t-taste-note">Basado en los géneros de todo lo que has marcado como visto.</p>
+      <div id="tasteChart"></div>
+    </div>
+    <div class="panel">
+      <h2 id="t-badges-h">Logros</h2>
+      <div class="card-grid" id="badgesGrid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));"></div>
+    </div>
+    <div class="panel">
+      <div class="section-title">
+        <h2 id="t-vocab-h">Entrenador de vocabulario</h2>
+        <span class="rating-pill" id="vocabDueCount">0</span>
+      </div>
+      <p class="settings-note" id="t-vocab-note">Se arma solo con tus propios errores corregidos en las reseñas en inglés.</p>
+      <div id="vocabPractice"></div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: SETTINGS ===== -->
+  <section class="view" id="view-settings">
+    <div class="panel">
+      <h2 id="t-settings-h">Configuración de APIs</h2>
+      <p class="settings-note" id="t-settings-note">Estas claves se guardan solo en tu navegador (localStorage). La app funciona de forma autónoma, sin depender de este chat.</p>
+      <div class="field">
+        <label>TMDB API Key (v3)</label>
+        <input type="text" id="tmdbKeyInput" placeholder="TMDB API Key">
+        <div class="key-status"><span class="dot" id="tmdbDot"></span><span id="tmdbStatusText">—</span></div>
+      </div>
+      <div class="field">
+        <label>OpenRouter API Key</label>
+        <input type="text" id="orKeyInput" placeholder="sk-or-v1-...">
+        <div class="key-status"><span class="dot" id="orDot"></span><span id="orStatusText">—</span></div>
+      </div>
+      <div class="field">
+        <label id="t-model-label">Modelo OpenRouter (para corrección gramatical)</label>
+        <input type="text" id="modelInput" placeholder="deepseek/deepseek-chat">
+      </div>
+      <button class="btn btn-primary" id="btnSaveKeys"><span id="t-savekeys-btn">Guardar claves</span></button>
+    </div>
+    <div class="panel">
+      <h2 id="t-backup-h">Respaldo de tus datos</h2>
+      <p class="settings-note" id="t-backup-note">Todo vive en este navegador. Descarga un respaldo de vez en cuando para no perder tu lista si limpias el caché o cambias de computadora.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn btn-ghost" id="btnExportBackup">⬇️ <span id="t-export-btn">Exportar mi lista</span></button>
+        <label class="btn btn-ghost" style="cursor:pointer;">⬆️ <span id="t-import-btn">Importar respaldo</span>
+          <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+        </label>
+      </div>
+      <div id="importStatus" style="margin-top:8px;"></div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="modalOverlay" style="display:none;">
+  <div class="modal-box">
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <div class="modal-hero" id="modalHero"></div>
+    <div class="modal-body-form" id="modalForm"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   I18N
+========================================================= */
+const I18N = {
+  es:{
+    title:'CINE·TRACKER', tagline:'Tu cartelera personal — cine, series y estrenos',
+    tabToday:'Hoy veo', tabPremieres:'Estrenos', tabMylist:'Mi lista', tabSettings:'Ajustes',
+    moodQ:'¿Qué te provoca ver hoy?',
+    moods:[
+      {key:'happy',emoji:'😄',label:'Reírme',movieGenres:[35],tvGenres:[35]},
+      {key:'cry',emoji:'😢',label:'Llorar',movieGenres:[18],tvGenres:[18]},
+      {key:'think',emoji:'🤔',label:'Pensar',movieGenres:[18,9648],tvGenres:[9648,18]},
+      {key:'action',emoji:'💥',label:'Adrenalina',movieGenres:[28,53],tvGenres:[10759]},
+      {key:'love',emoji:'💕',label:'Romance',movieGenres:[10749],tvGenres:[18]},
+      {key:'scare',emoji:'👻',label:'Sustos',movieGenres:[27],tvGenres:[9648]},
+      {key:'family',emoji:'👨‍👩‍👧',label:'En familia',movieGenres:[10751,16],tvGenres:[10751,10762]},
+      {key:'mind',emoji:'🌌',label:'Volar la mente',movieGenres:[878],tvGenres:[10765]},
+    ],
+    premieresH:'Próximos estrenos', cinesH:'Ver cartelera en Venezuela',
+    cinesNote:'TMDB no tiene horarios de cines venezolanos, pero te llevamos directo a la cartelera:',
+    addH:'Buscar y añadir a mi lista', searchLabel:'Buscar película o serie',
+    statusLabel:'Estado', planned:'Por ver', watching:'Viendo', completed:'Completado',
+    ratingLabel:'Tu calificación (1-5)', reviewLangLabel:'Idioma de tu reseña',
+    reviewLabel:'Reseña corta', correctBtn:'Corregir gramática', saveBtn:'Guardar',
+    mylistH:'Mi lista', settingsH:'Configuración de APIs',
+    settingsNote:'Estas claves se guardan solo en tu navegador (localStorage). La app funciona de forma autónoma, sin depender de este chat.',
+    modelLabel:'Modelo OpenRouter (para corrección gramatical)', saveKeysBtn:'Guardar claves',
+    statTotal:'Títulos', statWatched:'Completados', statAvg:'Promedio', statTop:'Género top',
+    emptyMood:'Elige un mood para ver recomendaciones', emptyList:'Aún no has añadido nada. ¡Busca algo arriba!',
+    reviewPh:'¿Qué te pareció?', keyMissing:'Falta la clave', keyOk:'Conectada',
+    correcting:'Corrigiendo...', suggestion:'Sugerencia corregida', tickerLoading:'Cargando próximos estrenos...',
+    tickerPrefix:'PRÓXIMOS ESTRENOS: ', markSeen:'👁 Ya la vi', seen:'✓ Vista',
+    recoH:'Recomendado para ti', recoMovies:'Películas', recoSeries:'Series',
+    recoNoteReady:'Basado en lo que has calificado con 4-5 estrellas.',
+    recoNoteEmpty:'Aún no tengo suficientes datos. Califica algunas películas o series en "Mi lista" (4-5 estrellas) y aquí aparecerán recomendaciones hechas a tu medida.',
+    moodMovies:'Películas', moodSeries:'Series', filterAll:'Todo', filterMovie:'Películas', filterSeries:'Series',
+    reviewsTitle:'Reseñas', noReviews:'Sin reseñas disponibles todavía.', save:'Guardar cambios',
+    synopsis:'Sinopsis', refreshBtn:'Ninguna me llama, ver otras', watchedH:'Vistas recientemente',
+    seeAll:'Ver mi lista', becauseYouWatched:'Porque viste', emptyWatched:'Aún no has marcado nada como vista.',
+    markWatchedQuick:'👁 Marcar vista', grammarHint:'Elige "English" para que aparezca el botón de corrección gramatical.',
+    tabPerfil:'Mi perfil', surpriseH:'¿No sabes qué elegir?', surpriseSub:'Te elegimos algo basado en tu perfil de gustos.',
+    surpriseBtn:'Sorpréndeme', surpriseNoData:'Aún no tengo suficientes datos tuyos, así que te traigo algo popular del momento.',
+    filterGenre:'Género', filterYear:'Año', filterRating:'Calificación mínima',
+    tasteH:'Tu perfil de gustos', tasteNote:'Basado en los géneros de todo lo que has marcado como visto.',
+    tasteEmpty:'Marca algunas películas o series como vistas para ver tu perfil aquí.',
+    badgesH:'Logros', vocabH:'Entrenador de vocabulario',
+    catProgress:'🎬 Progreso general', catHabits:'🔥 Hábitos y rachas', catReviews:'⭐ Calificaciones y reseñas',
+    catLanguage:'🇬🇧 Idioma y vocabulario', catGenres:'🎭 Géneros favoritos', catDecades:'🕰️ Épocas',
+    badgesUnlockedOf:'Has desbloqueado {n} de {total} logros',
+    wrappedH:'🎁 Tu año en cine', wrappedAllTime:'Todo el tiempo', wrappedEmpty:'Aún no tienes suficientes títulos vistos para armar tu resumen. ¡Marca algunas como vistas!',
+    wrappedTotal:'Títulos vistos', wrappedFavTitle:'Tu favorita', wrappedTopGenre:'Género dominante', wrappedActiveMonth:'Mes más activo',
+    wrappedLongestStreak:'Racha más larga', wrappedReviews:'Reseñas escritas', wrappedVocab:'Tarjetas de vocabulario', wrappedDays:'días',
+    recapH:'🤖 Recapitulación semanal', recapBtn:'Generar', recapBtnRegen:'🔄 Regenerar',
+    recapNote:'Un resumen corto generado con IA sobre tu semana, basado en lo que has visto y calificado.',
+    recapGenerating:'Generando tu recapitulación...', recapEmpty:'Aún no tienes actividad esta semana. ¡Marca algo como visto o califica algo para generar tu recap!',
+    recapGeneratedOn:'Generado el', recapError:'No se pudo generar la recapitulación.',
+    vocabNote:'Se arma solo con tus propios errores corregidos en las reseñas en inglés.',
+    vocabEmpty:'Aún no tienes tarjetas. Escribe reseñas en inglés y usa el corrector — tus errores se guardan aquí automáticamente.',
+    vocabAllDone:'¡Completaste tus repasos de hoy! Vuelve mañana.',
+    vocabKnew:'✓ Ya lo sé', vocabStillHard:'✗ Aún me cuesta', vocabReveal:'Mostrar corrección',
+    vocabDueLabel:'pendientes', streakLabel:'Racha actual', streakDaysLabel:'días',
+    backupH:'Respaldo de tus datos', backupNote:'Todo vive en este navegador. Descarga un respaldo de vez en cuando para no perder tu lista si limpias el caché o cambias de computadora.',
+    exportBtn:'Exportar mi lista', importBtn:'Importar respaldo', importSuccess:'✓ Respaldo importado correctamente.',
+    importError:'⚠️ El archivo no es un respaldo válido.', providersTitle:'📍 Disponible en', noProviders:'No encontramos dónde verla en Venezuela por ahora.',
+    providersNote:'(datos de referencia de EE.UU., pueden variar en Venezuela)',
+    totalWatchedBadge:'Total vistas'
+  },
+  en:{
+    title:'CINE·TRACKER', tagline:'Your personal watchlist — movies, series and premieres',
+    tabToday:'Watch today', tabPremieres:'Premieres', tabMylist:'My list', tabSettings:'Settings',
+    moodQ:'What are you in the mood for?',
+    moods:[
+      {key:'happy',emoji:'😄',label:'Laugh',movieGenres:[35],tvGenres:[35]},
+      {key:'cry',emoji:'😢',label:'Cry',movieGenres:[18],tvGenres:[18]},
+      {key:'think',emoji:'🤔',label:'Think',movieGenres:[18,9648],tvGenres:[9648,18]},
+      {key:'action',emoji:'💥',label:'Adrenaline',movieGenres:[28,53],tvGenres:[10759]},
+      {key:'love',emoji:'💕',label:'Romance',movieGenres:[10749],tvGenres:[18]},
+      {key:'scare',emoji:'👻',label:'Scares',movieGenres:[27],tvGenres:[9648]},
+      {key:'family',emoji:'👨‍👩‍👧',label:'Family time',movieGenres:[10751,16],tvGenres:[10751,10762]},
+      {key:'mind',emoji:'🌌',label:'Blow my mind',movieGenres:[878],tvGenres:[10765]},
+    ],
+    premieresH:'Upcoming premieres', cinesH:'Check showtimes in Venezuela',
+    cinesNote:"TMDB doesn't have Venezuelan cinema showtimes, but here's a direct link to the listings:",
+    addH:'Search and add to my list', searchLabel:'Search a movie or show',
+    statusLabel:'Status', planned:'Plan to watch', watching:'Watching', completed:'Completed',
+    ratingLabel:'Your rating (1-5)', reviewLangLabel:'Review language',
+    reviewLabel:'Short review', correctBtn:'Correct grammar', saveBtn:'Save',
+    mylistH:'My list', settingsH:'API settings',
+    settingsNote:'These keys are stored only in your browser (localStorage). The app works autonomously, without depending on this chat.',
+    modelLabel:'OpenRouter model (for grammar correction)', saveKeysBtn:'Save keys',
+    statTotal:'Titles', statWatched:'Completed', statAvg:'Average', statTop:'Top genre',
+    emptyMood:'Pick a mood to see recommendations', emptyList:"You haven't added anything yet. Search above!",
+    reviewPh:'What did you think about it?', keyMissing:'Key missing', keyOk:'Connected',
+    correcting:'Correcting...', suggestion:'Corrected suggestion', tickerLoading:'Loading upcoming premieres...',
+    tickerPrefix:'UPCOMING PREMIERES: ', markSeen:'👁 Watched', seen:'✓ Watched',
+    recoH:'Recommended for you', recoMovies:'Movies', recoSeries:'Series',
+    recoNoteReady:'Based on what you rated 4-5 stars.',
+    recoNoteEmpty:'Not enough data yet. Rate a few movies or shows in "My list" (4-5 stars) and tailored picks will show up here.',
+    moodMovies:'Movies', moodSeries:'Series', filterAll:'All', filterMovie:'Movies', filterSeries:'Series',
+    reviewsTitle:'Reviews', noReviews:'No reviews available yet.', save:'Save changes',
+    synopsis:'Synopsis', refreshBtn:"None of these grab me, show others", watchedH:'Recently watched',
+    seeAll:'See my list', becauseYouWatched:'Because you watched', emptyWatched:"You haven't marked anything as watched yet.",
+    markWatchedQuick:'👁 Mark watched', grammarHint:'Choose "English" to show the grammar correction button.',
+    tabPerfil:'My profile', surpriseH:"Can't decide?", surpriseSub:'We pick something based on your taste profile.',
+    surpriseBtn:'Surprise me', surpriseNoData:"I don't have enough data on you yet, so here's something popular right now.",
+    filterGenre:'Genre', filterYear:'Year', filterRating:'Minimum rating',
+    tasteH:'Your taste profile', tasteNote:'Based on the genres of everything you marked as watched.',
+    tasteEmpty:'Mark a few movies or shows as watched to see your profile here.',
+    badgesH:'Achievements', vocabH:'Vocabulary trainer',
+    catProgress:'🎬 Overall progress', catHabits:'🔥 Habits and streaks', catReviews:'⭐ Ratings and reviews',
+    catLanguage:'🇬🇧 Language and vocabulary', catGenres:'🎭 Favorite genres', catDecades:'🕰️ Eras',
+    badgesUnlockedOf:'You unlocked {n} of {total} achievements',
+    wrappedH:'🎁 Your year in film', wrappedAllTime:'All time', wrappedEmpty:"You don't have enough watched titles yet to build your recap. Mark a few as watched!",
+    wrappedTotal:'Titles watched', wrappedFavTitle:'Your favorite', wrappedTopGenre:'Top genre', wrappedActiveMonth:'Most active month',
+    wrappedLongestStreak:'Longest streak', wrappedReviews:'Reviews written', wrappedVocab:'Vocabulary cards', wrappedDays:'days',
+    recapH:'🤖 Weekly recap', recapBtn:'Generate', recapBtnRegen:'🔄 Regenerate',
+    recapNote:'A short AI-generated summary of your week, based on what you watched and rated.',
+    recapGenerating:'Generating your recap...', recapEmpty:"No activity yet this week. Mark something as watched or rate something to generate your recap!",
+    recapGeneratedOn:'Generated on', recapError:'Could not generate the recap.',
+    vocabNote:'Built automatically from your own corrected mistakes in English reviews.',
+    vocabEmpty:"No cards yet. Write reviews in English and use the corrector — your mistakes get saved here automatically.",
+    vocabAllDone:"You finished today's reviews! Come back tomorrow.",
+    vocabKnew:'✓ I knew it', vocabStillHard:"✗ Still tricky", vocabReveal:'Show correction',
+    vocabDueLabel:'due', streakLabel:'Current streak', streakDaysLabel:'days',
+    backupH:'Data backup', backupNote:"Everything lives in this browser. Download a backup once in a while so you don't lose your list if you clear cache or switch computers.",
+    exportBtn:'Export my list', importBtn:'Import backup', importSuccess:'✓ Backup imported successfully.',
+    importError:'⚠️ This file is not a valid backup.', providersTitle:'📍 Available on', noProviders:"We couldn't find where to watch this in Venezuela yet.",
+    providersNote:'(reference data from the US, may vary in Venezuela)',
+    totalWatchedBadge:'Total watched'
+  }
+};
+
+let LANG = localStorage.getItem('ct_lang') || 'es';
+let MY_LIST = JSON.parse(localStorage.getItem('ct_mylist') || '[]');
+let TMDB_KEY = localStorage.getItem('ct_tmdb_key') || '';
+let OR_KEY = localStorage.getItem('ct_or_key') || '';
+let OR_MODEL = localStorage.getItem('ct_or_model') || 'deepseek/deepseek-chat';
+let GENRE_MAP = {movie:{}, tv:{}};
+let LIST_FILTER = 'all';
+const VISIBLE_COUNT = 9;
+let MOOD_RUNTIME = {moodKey:null, movie:{pool:[],visible:[],historyKey:null}, tv:{pool:[],visible:[],historyKey:null}};
+let CURRENT_MOOD = null;
+
+function getMoodHistory(key){
+  const all = JSON.parse(localStorage.getItem('ct_moodhistory')||'{}');
+  return new Set(all[key]||[]);
+}
+function addMoodHistory(key, ids){
+  if(!ids.length) return;
+  const all = JSON.parse(localStorage.getItem('ct_moodhistory')||'{}');
+  const set = new Set(all[key]||[]);
+  ids.forEach(id=>set.add(id));
+  let arr = Array.from(set);
+  if(arr.length>300) arr = arr.slice(arr.length-300);
+  all[key]=arr;
+  localStorage.setItem('ct_moodhistory', JSON.stringify(all));
+}
+function resetMoodHistory(key){
+  const all = JSON.parse(localStorage.getItem('ct_moodhistory')||'{}');
+  all[key]=[];
+  localStorage.setItem('ct_moodhistory', JSON.stringify(all));
+}
+
+if(!localStorage.getItem('ct_or_model')) localStorage.setItem('ct_or_model', OR_MODEL);
+
+function t(key){ return I18N[LANG][key]; }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+/* =========================================================
+   BULBS
+========================================================= */
+function renderBulbs(){
+  const rowTop = document.getElementById('bulbTop');
+  const rowBottom = document.getElementById('bulbBottom');
+  rowTop.innerHTML = ''; rowBottom.innerHTML = '';
+  for(let i=0;i<18;i++){
+    const b1 = document.createElement('div'); b1.className='bulb'; b1.style.animationDelay=(i*0.08)+'s';
+    rowTop.appendChild(b1);
+    const b2 = document.createElement('div'); b2.className='bulb'; b2.style.animationDelay=(i*0.08+0.4)+'s';
+    rowBottom.appendChild(b2);
+  }
+}
+
+/* =========================================================
+   TMDB HELPERS
+========================================================= */
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+const IMG_BASE = 'https://image.tmdb.org/t/p/w342';
+
+async function tmdb(path, params={}){
+  const url = new URL(TMDB_BASE + path);
+  url.searchParams.set('api_key', TMDB_KEY);
+  url.searchParams.set('language', LANG === 'es' ? 'es-ES' : 'en-US');
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('TMDB error '+res.status);
+  return res.json();
+}
+
+function posterUrl(path){
+  return path ? IMG_BASE+path : 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300"><rect width="100%" height="100%" fill="%231B2147"/></svg>');
+}
+
+async function loadGenreMaps(){
+  try{
+    const m = await tmdb('/genre/movie/list', {});
+    m.genres.forEach(g=>GENRE_MAP.movie[g.id]=g.name);
+    const tv = await tmdb('/genre/tv/list', {});
+    tv.genres.forEach(g=>GENRE_MAP.tv[g.id]=g.name);
+  }catch(e){}
+}
+
+function genreNamesFor(ids, mediaType){
+  return (ids||[]).map(id=>GENRE_MAP[mediaType] && GENRE_MAP[mediaType][id]).filter(Boolean);
+}
+
+/* =========================================================
+   SEEN / LIST HELPERS
+========================================================= */
+function findEntry(tmdbId, mediaType){
+  return MY_LIST.find(m=>m.tmdbId===tmdbId && m.mediaType===mediaType) || null;
+}
+function isCompleted(tmdbId, mediaType){
+  const e = findEntry(tmdbId, mediaType);
+  return e && e.status==='completed';
+}
+function completedIdSet(mediaType){
+  return new Set(MY_LIST.filter(m=>m.mediaType===mediaType && m.status==='completed').map(m=>m.tmdbId));
+}
+
+function logActivity(){
+  const today = todayISO();
+  let log = JSON.parse(localStorage.getItem('ct_activity')||'[]');
+  if(!log.includes(today)){
+    log.push(today);
+    if(log.length>400) log = log.slice(log.length-400);
+    localStorage.setItem('ct_activity', JSON.stringify(log));
+  }
+}
+function recordMoodUsage(key){
+  const used = new Set(JSON.parse(localStorage.getItem('ct_moods_used')||'[]'));
+  used.add(key);
+  localStorage.setItem('ct_moods_used', JSON.stringify(Array.from(used)));
+}
+
+function upsertEntry(entry){
+  const idx = MY_LIST.findIndex(m=>m.tmdbId===entry.tmdbId && m.mediaType===entry.mediaType);
+  if(idx>=0) MY_LIST[idx] = {...MY_LIST[idx], ...entry, dateAdded: MY_LIST[idx].dateAdded || new Date().toISOString()};
+  else MY_LIST.unshift({...entry, dateAdded:new Date().toISOString()});
+  localStorage.setItem('ct_mylist', JSON.stringify(MY_LIST));
+  if(entry.status==='completed') logActivity();
+  renderStats();
+  renderMyList();
+  renderWatchedStrip();
+  renderBecauseYouWatched();
+  renderProfile();
+  populateListFilters();
+}
+
+function quickMarkSeen(item, mediaType){
+  const existing = findEntry(item.id, mediaType);
+  const entry = existing ? {...existing, status:'completed'} : {
+    tmdbId:item.id, mediaType, title:item.title||item.name, poster:item.poster_path,
+    year:(item.release_date||item.first_air_date||'').slice(0,4),
+    genreIds:item.genre_ids||[], status:'completed', rating:0, reviewLang:'es', review:''
+  };
+  upsertEntry(entry);
+}
+
+/* =========================================================
+   TABS
+========================================================= */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    document.getElementById('statsRow').style.display = (btn.dataset.view==='premieres'||btn.dataset.view==='settings') ? 'none' : 'grid';
+  });
+});
+
+/* =========================================================
+   LANGUAGE TOGGLE
+========================================================= */
+function applyLang(){
+  document.getElementById('btnLangEs').classList.toggle('active', LANG==='es');
+  document.getElementById('btnLangEn').classList.toggle('active', LANG==='en');
+  document.getElementById('t-title').textContent = t('title');
+  document.getElementById('t-tagline').textContent = t('tagline');
+  document.getElementById('t-tab-today').textContent = t('tabToday');
+  document.getElementById('t-tab-premieres').textContent = t('tabPremieres');
+  document.getElementById('t-tab-mylist').textContent = t('tabMylist');
+  document.getElementById('t-tab-settings').textContent = t('tabSettings');
+  document.getElementById('t-mood-q').textContent = t('moodQ');
+  document.getElementById('t-reco-h').textContent = t('recoH');
+  document.getElementById('t-reco-movies').textContent = t('recoMovies');
+  document.getElementById('t-reco-series').textContent = t('recoSeries');
+  document.getElementById('t-mood-movies').textContent = t('moodMovies');
+  document.getElementById('t-mood-series').textContent = t('moodSeries');
+  document.getElementById('t-refresh-btn').textContent = t('refreshBtn');
+  document.getElementById('t-watched-h').textContent = t('watchedH');
+  document.getElementById('t-see-all').textContent = t('seeAll');
+  document.getElementById('t-premieres-h').textContent = t('premieresH');
+  document.getElementById('t-cines-h').textContent = t('cinesH');
+  document.getElementById('t-cines-note').textContent = t('cinesNote');
+  document.getElementById('t-add-h').textContent = t('addH');
+  document.getElementById('t-search-label').textContent = t('searchLabel');
+  document.getElementById('t-mylist-h').textContent = t('mylistH');
+  document.getElementById('t-settings-h').textContent = t('settingsH');
+  document.getElementById('t-settings-note').textContent = t('settingsNote');
+  document.getElementById('t-model-label').textContent = t('modelLabel');
+  document.getElementById('t-savekeys-btn').textContent = t('saveKeysBtn');
+  document.getElementById('fp-all').textContent = t('filterAll');
+  document.getElementById('fp-movie').textContent = '🎬 '+t('filterMovie');
+  document.getElementById('fp-tv').textContent = '📺 '+t('filterSeries');
+  document.getElementById('t-tab-perfil').textContent = t('tabPerfil');
+  document.getElementById('t-surprise-h').textContent = t('surpriseH');
+  document.getElementById('t-surprise-sub').textContent = t('surpriseSub');
+  document.getElementById('t-surprise-btn').textContent = t('surpriseBtn');
+  document.getElementById('t-filter-genre').textContent = t('filterGenre');
+  document.getElementById('t-filter-year').textContent = t('filterYear');
+  document.getElementById('t-filter-rating').textContent = t('filterRating');
+  document.getElementById('t-taste-h').textContent = t('tasteH');
+  document.getElementById('t-taste-note').textContent = t('tasteNote');
+  document.getElementById('t-badges-h').textContent = t('badgesH');
+  document.getElementById('t-vocab-h').textContent = t('vocabH');
+  document.getElementById('t-vocab-note').textContent = t('vocabNote');
+  document.getElementById('t-backup-h').textContent = t('backupH');
+  document.getElementById('t-backup-note').textContent = t('backupNote');
+  document.getElementById('t-export-btn').textContent = t('exportBtn');
+  document.getElementById('t-import-btn').textContent = t('importBtn');
+  document.getElementById('t-wrapped-h').textContent = t('wrappedH');
+  document.getElementById('t-recap-h').textContent = t('recapH');
+  document.getElementById('t-recap-note').textContent = t('recapNote');
+  renderMoodGrid();
+  renderStats();
+  renderMyList();
+  renderPersonalized();
+  renderWatchedStrip();
+  renderBecauseYouWatched();
+  renderProfile();
+  populateListFilters();
+  loadPremieres();
+  loadTicker();
+}
+document.getElementById('btnLangEs').addEventListener('click', ()=>{LANG='es';localStorage.setItem('ct_lang','es');applyLang();});
+document.getElementById('btnLangEn').addEventListener('click', ()=>{LANG='en';localStorage.setItem('ct_lang','en');applyLang();});
+
+/* =========================================================
+   STATS
+========================================================= */
+function renderStats(){
+  const total = MY_LIST.length;
+  const completed = MY_LIST.filter(m=>m.status==='completed').length;
+  const rated = MY_LIST.filter(m=>m.rating>0);
+  const avg = rated.length ? (rated.reduce((a,b)=>a+b.rating,0)/rated.length).toFixed(1) : '—';
+  const genreCount = {};
+  MY_LIST.forEach(m=> (m.genreIds||[]).forEach(gid=>{
+    const name = GENRE_MAP[m.mediaType] ? GENRE_MAP[m.mediaType][gid] : null;
+    if(name) genreCount[name]=(genreCount[name]||0)+1;
+  }));
+  let topGenre = '—', max=0;
+  Object.entries(genreCount).forEach(([g,c])=>{ if(c>max){max=c;topGenre=g;} });
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">${t('statTotal')}</div></div>
+    <div class="stat-card green"><div class="stat-num">${completed}</div><div class="stat-label">${t('statWatched')}</div></div>
+    <div class="stat-card gold"><div class="stat-num">${avg}</div><div class="stat-label">${t('statAvg')}</div></div>
+    <div class="stat-card pink"><div class="stat-num" style="font-size:1.1rem">${topGenre}</div><div class="stat-label">${t('statTop')}</div></div>
+  `;
+}
+
+/* =========================================================
+   CARD GRID RENDER (shared)
+========================================================= */
+function renderCardGrid(container, items, mediaType){
+  if(!items || !items.length){ container.innerHTML = `<div class="empty-state">—</div>`; return; }
+  container.innerHTML='';
+  items.forEach(item=>{
+    const title = item.title || item.name;
+    const date = item.release_date || item.first_air_date || '';
+    const year = date ? date.slice(0,4) : '';
+    const seen = isCompleted(item.id, mediaType);
+    const card = document.createElement('div');
+    card.className='movie-card';
+    card.innerHTML = `
+      <div class="poster-wrap">
+        <img src="${posterUrl(item.poster_path)}" alt="${title}">
+        <button class="seen-btn ${seen?'is-seen':''}" data-seen-id="${item.id}">${seen? t('seen') : t('markSeen')}</button>
+      </div>
+      <div class="mc-body">
+        <div class="mc-title">${title}</div>
+        <div class="mc-meta"><span>${year}</span><span class="rating-pill">★ ${item.vote_average ? item.vote_average.toFixed(1) : '—'}</span></div>
+      </div>`;
+    card.querySelector('.poster-wrap img').addEventListener('click', ()=> openModal(item, mediaType));
+    card.querySelector('.mc-body').addEventListener('click', ()=> openModal(item, mediaType));
+    card.querySelector('.seen-btn').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      quickMarkSeen(item, mediaType);
+      renderCardGrid(container, items, mediaType);
+      renderWatchedStrip();
+      renderPersonalized();
+      renderBecauseYouWatched();
+    });
+    container.appendChild(card);
+  });
+}
+
+/* =========================================================
+   MOOD PICKER
+========================================================= */
+function renderMoodGrid(){
+  const grid = document.getElementById('moodGrid');
+  grid.innerHTML='';
+  t('moods').forEach(m=>{
+    const btn = document.createElement('button');
+    btn.className='mood-btn';
+    btn.innerHTML = `<span class="mood-emoji">${m.emoji}</span>${m.label}`;
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      recordMoodUsage(m.key);
+      loadMoodResults(m);
+    });
+    grid.appendChild(btn);
+  });
+  document.getElementById('moodMoviesHead').style.display='none';
+  document.getElementById('moodSeriesHead').style.display='none';
+  document.getElementById('moodMoviesGrid').innerHTML='';
+  document.getElementById('moodSeriesGrid').innerHTML='';
+  document.getElementById('moodRefreshWrap').style.display='none';
+  document.getElementById('moodEmpty').innerHTML = `<div class="empty-state"><span class="emoji">🎥</span>${t('emptyMood')}</div>`;
+  CURRENT_MOOD = null;
+}
+
+async function discoverMany(mediaType, genreIds, opts={}){
+  if(!genreIds || !genreIds.length) return [];
+  const numPages = opts.pages || 2;
+  const startPage = opts.startPage || 1;
+  const base = mediaType==='movie'
+    ? {with_genres:genreIds.join(','), sort_by:'popularity.desc', 'vote_count.gte':60, 'primary_release_date.lte':todayISO()}
+    : {with_genres:genreIds.join(','), sort_by:'popularity.desc', 'vote_count.gte':60, 'first_air_date.lte':todayISO()};
+  const params = {...base};
+  const pagePromises = [];
+  for(let i=0;i<numPages;i++){
+    pagePromises.push(tmdb(`/discover/${mediaType}`, {...params, page:startPage+i}));
+  }
+  const pageResults = await Promise.all(pagePromises);
+  const combined = pageResults.flatMap(p=>p.results||[]);
+  const seenCompleted = completedIdSet(mediaType);
+  const dedupe = new Set();
+  return combined.filter(it=>{
+    if(dedupe.has(it.id)) return false;
+    dedupe.add(it.id);
+    if(seenCompleted.has(it.id)) return false;
+    return true;
+  });
+}
+
+function buildRuntimePool(rawList, historyKey){
+  const hist = getMoodHistory(historyKey);
+  let filtered = rawList.filter(it=>!hist.has(it.id));
+  if(filtered.length < VISIBLE_COUNT){
+    resetMoodHistory(historyKey);
+    filtered = rawList;
+  }
+  const visible = filtered.slice(0, VISIBLE_COUNT);
+  const pool = filtered.slice(VISIBLE_COUNT);
+  addMoodHistory(historyKey, visible.map(i=>i.id));
+  return {pool, visible, historyKey};
+}
+
+async function loadMoodResults(mood){
+  CURRENT_MOOD = mood;
+  document.getElementById('moodEmpty').innerHTML = `<div class="empty-state"><span class="loader"></span></div>`;
+  document.getElementById('moodMoviesGrid').innerHTML='';
+  document.getElementById('moodSeriesGrid').innerHTML='';
+  document.getElementById('moodMoviesHead').style.display='none';
+  document.getElementById('moodSeriesHead').style.display='none';
+  document.getElementById('moodRefreshWrap').style.display='none';
+  if(!TMDB_KEY){ document.getElementById('moodEmpty').innerHTML = `<div class="empty-state">${t('keyMissing')}: TMDB</div>`; return; }
+  try{
+    const startPage = 1 + Math.floor(Math.random()*3);
+    const [movieRaw, tvRaw] = await Promise.all([
+      discoverMany('movie', mood.movieGenres, {pages:3, startPage}),
+      discoverMany('tv', mood.tvGenres, {pages:3, startPage})
+    ]);
+    MOOD_RUNTIME.moodKey = mood.key;
+    MOOD_RUNTIME.movie = buildRuntimePool(movieRaw, `${mood.key}-movie`);
+    MOOD_RUNTIME.tv = buildRuntimePool(tvRaw, `${mood.key}-tv`);
+    document.getElementById('moodEmpty').innerHTML='';
+    if(MOOD_RUNTIME.movie.visible.length || MOOD_RUNTIME.tv.visible.length){
+      document.getElementById('moodRefreshWrap').style.display='flex';
+    }
+    renderMoodMediaGrid('movie');
+    renderMoodMediaGrid('tv');
+    if(!MOOD_RUNTIME.movie.visible.length && !MOOD_RUNTIME.tv.visible.length){
+      document.getElementById('moodEmpty').innerHTML = `<div class="empty-state">—</div>`;
+    }
+  }catch(e){
+    document.getElementById('moodEmpty').innerHTML = `<div class="empty-state">⚠️ ${e.message}</div>`;
+  }
+}
+
+function renderMoodMediaGrid(mediaType){
+  const rt = MOOD_RUNTIME[mediaType];
+  const headEl = document.getElementById(mediaType==='movie' ? 'moodMoviesHead' : 'moodSeriesHead');
+  const gridEl = document.getElementById(mediaType==='movie' ? 'moodMoviesGrid' : 'moodSeriesGrid');
+  if(!rt.visible.length){ headEl.style.display='none'; gridEl.innerHTML=''; return; }
+  headEl.style.display='flex';
+  gridEl.innerHTML='';
+  rt.visible.forEach(item=>{
+    const title = item.title || item.name;
+    const date = item.release_date || item.first_air_date || '';
+    const year = date ? date.slice(0,4) : '';
+    const card = document.createElement('div');
+    card.className='movie-card';
+    card.innerHTML = `
+      <div class="poster-wrap">
+        <img src="${posterUrl(item.poster_path)}" alt="${title}">
+        <button class="seen-btn" data-seen-id="${item.id}">${t('markSeen')}</button>
+      </div>
+      <div class="mc-body">
+        <div class="mc-title">${title}</div>
+        <div class="mc-meta"><span>${year}</span><span class="rating-pill">★ ${item.vote_average ? item.vote_average.toFixed(1) : '—'}</span></div>
+      </div>`;
+    card.querySelector('.poster-wrap img').addEventListener('click', ()=> openModal(item, mediaType));
+    card.querySelector('.mc-body').addEventListener('click', ()=> openModal(item, mediaType));
+    card.querySelector('.seen-btn').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      replaceMoodCard(mediaType, item);
+    });
+    gridEl.appendChild(card);
+  });
+}
+
+function replaceMoodCard(mediaType, item){
+  quickMarkSeen(item, mediaType);
+  const rt = MOOD_RUNTIME[mediaType];
+  const idx = rt.visible.findIndex(v=>v.id===item.id);
+  if(idx>=0){
+    if(rt.pool.length){
+      const next = rt.pool.shift();
+      addMoodHistory(rt.historyKey, [next.id]);
+      rt.visible[idx] = next;
+    } else {
+      rt.visible.splice(idx,1);
+    }
+  }
+  renderMoodMediaGrid(mediaType);
+  renderWatchedStrip();
+  renderPersonalized();
+  renderBecauseYouWatched();
+}
+
+async function refreshMood(){
+  if(!CURRENT_MOOD) return;
+  document.getElementById('moodMoviesGrid').style.opacity='0.4';
+  document.getElementById('moodSeriesGrid').style.opacity='0.4';
+  await loadMoodResults(CURRENT_MOOD);
+  document.getElementById('moodMoviesGrid').style.opacity='1';
+  document.getElementById('moodSeriesGrid').style.opacity='1';
+}
+document.getElementById('btnRefreshMood').addEventListener('click', refreshMood);
+document.getElementById('btnGoToMyList').addEventListener('click', ()=>{
+  document.querySelector('.tab-btn[data-view="mylist"]').click();
+});
+
+/* =========================================================
+   WATCHED STRIP ("Vistas recientemente")
+========================================================= */
+function renderWatchedStrip(){
+  const panel = document.getElementById('watchedStripPanel');
+  const watched = MY_LIST.filter(m=>m.status==='completed').slice(0,8);
+  if(!watched.length){ panel.style.display='none'; return; }
+  panel.style.display='block';
+  const grid = document.getElementById('watchedStripGrid');
+  grid.innerHTML='';
+  watched.forEach(entry=>{
+    const card = document.createElement('div');
+    card.className='movie-card';
+    const stars = entry.rating>0 ? '★'.repeat(entry.rating)+'☆'.repeat(5-entry.rating) : '';
+    card.innerHTML = `
+      <div class="poster-wrap">
+        <img src="${posterUrl(entry.poster)}" alt="${entry.title}">
+      </div>
+      <div class="mc-body">
+        <div class="mc-title">${entry.title}</div>
+        <div class="mc-meta"><span>${entry.year||''}</span><span>${stars}</span></div>
+      </div>`;
+    card.addEventListener('click', ()=>openModal({
+      id:entry.tmdbId, title:entry.title, poster_path:entry.poster,
+      release_date:entry.mediaType==='movie'?entry.year+'-01-01':null,
+      first_air_date:entry.mediaType==='tv'?entry.year+'-01-01':null,
+      genre_ids:entry.genreIds
+    }, entry.mediaType));
+    grid.appendChild(card);
+  });
+}
+
+/* =========================================================
+   "PORQUE VISTE X" — Netflix-style similar recommendations
+========================================================= */
+async function renderBecauseYouWatched(){
+  const panel = document.getElementById('becauseWatchedPanel');
+  const container = document.getElementById('becauseWatchedContainer');
+  if(!TMDB_KEY){ panel.style.display='none'; return; }
+  const completed = MY_LIST.filter(m=>m.status==='completed');
+  if(!completed.length){ panel.style.display='none'; return; }
+  const sorted = [...completed].sort((a,b)=>(b.rating||0)-(a.rating||0));
+  const movieSeed = sorted.find(m=>m.mediaType==='movie');
+  const tvSeed = sorted.find(m=>m.mediaType==='tv');
+  const seeds = [movieSeed, tvSeed].filter(Boolean).slice(0,2);
+  if(!seeds.length){ panel.style.display='none'; return; }
+  panel.style.display='block';
+  container.innerHTML = `<div class="empty-state"><span class="loader"></span></div>`;
+  try{
+    const blocks = await Promise.all(seeds.map(async seed=>{
+      const data = await tmdb(`/${seed.mediaType}/${seed.tmdbId}/similar`, {});
+      const completedSet = completedIdSet(seed.mediaType);
+      const results = (data.results||[]).filter(r=>!completedSet.has(r.id)).slice(0,8);
+      return {seed, results};
+    }));
+    container.innerHTML='';
+    blocks.forEach(block=>{
+      if(!block.results.length) return;
+      const head = document.createElement('div');
+      head.className='subhead';
+      head.innerHTML = `${block.seed.mediaType==='movie'?'🎬':'📺'} ${t('becauseYouWatched')} "${block.seed.title}"<div class="dash"></div>`;
+      const grid = document.createElement('div');
+      grid.className='card-grid';
+      grid.style.marginBottom='10px';
+      container.appendChild(head);
+      container.appendChild(grid);
+      renderCardGrid(grid, block.results, block.seed.mediaType);
+    });
+    if(!container.children.length) panel.style.display='none';
+  }catch(e){
+    panel.style.display='none';
+  }
+}
+
+/* =========================================================
+   PERSONALIZED "RECOMENDADO PARA TI"
+========================================================= */
+function topGenresFrom(mediaType){
+  const counts = {};
+  MY_LIST.filter(m=>m.mediaType===mediaType && m.rating>=4).forEach(m=>{
+    (m.genreIds||[]).forEach(g=> counts[g]=(counts[g]||0)+1);
+  });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>parseInt(x[0]));
+}
+
+async function renderPersonalized(){
+  const panel = document.getElementById('recoPanel');
+  const movieGenres = topGenresFrom('movie');
+  const tvGenres = topGenresFrom('tv');
+  if(!movieGenres.length && !tvGenres.length){
+    panel.style.display='block';
+    document.getElementById('recoNote').textContent = t('recoNoteEmpty');
+    document.getElementById('recoMoviesHead').style.display='none';
+    document.getElementById('recoSeriesHead').style.display='none';
+    document.getElementById('recoMoviesGrid').innerHTML='';
+    document.getElementById('recoSeriesGrid').innerHTML='';
+    return;
+  }
+  panel.style.display='block';
+  document.getElementById('recoNote').textContent = t('recoNoteReady');
+  if(!TMDB_KEY) return;
+  try{
+    const [movies, series] = await Promise.all([
+      movieGenres.length ? discoverMany('movie', movieGenres) : [],
+      tvGenres.length ? discoverMany('tv', tvGenres) : []
+    ]);
+    if(movies.length){
+      document.getElementById('recoMoviesHead').style.display='flex';
+      renderCardGrid(document.getElementById('recoMoviesGrid'), movies.slice(0,8), 'movie');
+    } else { document.getElementById('recoMoviesHead').style.display='none'; document.getElementById('recoMoviesGrid').innerHTML=''; }
+    if(series.length){
+      document.getElementById('recoSeriesHead').style.display='flex';
+      renderCardGrid(document.getElementById('recoSeriesGrid'), series.slice(0,8), 'tv');
+    } else { document.getElementById('recoSeriesHead').style.display='none'; document.getElementById('recoSeriesGrid').innerHTML=''; }
+  }catch(e){}
+}
+
+/* =========================================================
+   PREMIERES + TICKER  (fixed: discover-based, always has fallback)
+========================================================= */
+async function fetchUpcomingMovies(){
+  const params = {sort_by:'popularity.desc', 'primary_release_date.gte':todayISO(), page:1};
+  let data = await tmdb('/discover/movie', params);
+  if(!data.results || !data.results.length){
+    // fallback: widen window, drop date filter entirely
+    data = await tmdb('/discover/movie', {sort_by:'popularity.desc', page:1});
+  }
+  return data.results || [];
+}
+
+async function loadPremieres(){
+  const grid = document.getElementById('premieresGrid');
+  grid.innerHTML = `<div class="empty-state"><span class="loader"></span></div>`;
+  if(!TMDB_KEY){ grid.innerHTML = `<div class="empty-state">${t('keyMissing')}: TMDB</div>`; return; }
+  try{
+    const results = await fetchUpcomingMovies();
+    renderCardGrid(grid, results.slice(0,16), 'movie');
+  }catch(e){
+    grid.innerHTML = `<div class="empty-state">⚠️ ${e.message}</div>`;
+  }
+}
+
+async function loadTicker(){
+  const el = document.getElementById('tickerText');
+  el.textContent = t('tickerLoading');
+  if(!TMDB_KEY) return;
+  try{
+    const results = await fetchUpcomingMovies();
+    const titles = results.slice(0,10).map(m=>m.title).join('   ★   ');
+    el.textContent = titles ? (t('tickerPrefix') + titles) : '';
+  }catch(e){ el.textContent = ''; }
+}
+
+/* premieres search bar -> opens modal */
+let premieresSearchTimeout=null;
+document.getElementById('premieresSearchInput').addEventListener('input', (e)=>{
+  clearTimeout(premieresSearchTimeout);
+  const q = e.target.value.trim();
+  const box = document.getElementById('premieresSearchResults');
+  if(!q){ box.style.display='none'; return; }
+  premieresSearchTimeout = setTimeout(()=>runSearch(q, box), 400);
+});
+
+/* =========================================================
+   GENERIC SEARCH (used in Mi Lista + Estrenos)
+========================================================= */
+async function runSearch(q, box){
+  if(!TMDB_KEY){ box.style.display='block'; box.innerHTML = `<div class="sr-item">${t('keyMissing')}: TMDB</div>`; return; }
+  try{
+    const data = await tmdb('/search/multi', {query:q});
+    const results = (data.results||[]).filter(r=>r.media_type==='movie'||r.media_type==='tv').slice(0,8);
+    box.style.display='block';
+    if(!results.length){ box.innerHTML = `<div class="sr-item">—</div>`; return; }
+    box.innerHTML='';
+    results.forEach(r=>{
+      const title = r.title || r.name;
+      const date = r.release_date || r.first_air_date || '';
+      const div = document.createElement('div');
+      div.className='sr-item';
+      div.style.justifyContent='space-between';
+      div.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:center;flex:1;">
+          <img src="${posterUrl(r.poster_path)}">
+          <div><div class="sr-title">${title}</div><div class="sr-year">${date.slice(0,4)} · ${r.media_type==='movie'?'🎬':'📺'}</div></div>
+        </div>
+        <button class="btn btn-ghost btn-sm sr-quick-watch" style="flex-shrink:0;">${t('markWatchedQuick')}</button>
+      `;
+      div.querySelector('img').addEventListener('click', ()=>{ box.style.display='none'; openModal(r, r.media_type); });
+      div.querySelector('.sr-title').addEventListener('click', ()=>{ box.style.display='none'; openModal(r, r.media_type); });
+      div.querySelector('.sr-quick-watch').addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        quickMarkSeen(r, r.media_type);
+        renderWatchedStrip();
+        renderPersonalized();
+        renderBecauseYouWatched();
+        box.style.display='none';
+      });
+      box.appendChild(div);
+    });
+  }catch(e){
+    box.style.display='block';
+    box.innerHTML = `<div class="sr-item">⚠️ ${e.message}</div>`;
+  }
+}
+
+let searchTimeout=null;
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  clearTimeout(searchTimeout);
+  const q = e.target.value.trim();
+  const box = document.getElementById('searchResults');
+  if(!q){ box.style.display='none'; return; }
+  searchTimeout = setTimeout(()=>runSearch(q, box), 400);
+});
+
+/* =========================================================
+   MODAL (detail + reviews + rate/review/save)
+========================================================= */
+const overlay = document.getElementById('modalOverlay');
+document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+function closeModal(){ overlay.style.display='none'; document.getElementById('modalHero').innerHTML=''; document.getElementById('modalForm').innerHTML=''; }
+
+async function openModal(basicItem, mediaType){
+  overlay.style.display='flex';
+  const title = basicItem.title || basicItem.name;
+  document.getElementById('modalHero').innerHTML = `
+    <img src="${posterUrl(basicItem.poster_path)}">
+    <div class="modal-hero-info">
+      <h2>${title}</h2>
+      <div class="modal-genres" id="modalGenres"><span class="loader"></span></div>
+      <div class="modal-overview" id="modalOverview">${t('synopsis')}...</div>
+      <div id="modalProviders"></div>
+    </div>`;
+  document.getElementById('modalForm').innerHTML = `<div class="empty-state"><span class="loader"></span></div>`;
+
+  let detail=null, reviews=null;
+  try{
+    detail = await tmdb(`/${mediaType}/${basicItem.id}`, {});
+  }catch(e){}
+  try{
+    reviews = await tmdb(`/${mediaType}/${basicItem.id}/reviews`, {});
+  }catch(e){}
+
+  const genreIds = detail && detail.genres ? detail.genres.map(g=>g.id) : (basicItem.genre_ids||[]);
+  const genreNames = detail && detail.genres ? detail.genres.map(g=>g.name) : genreNamesFor(genreIds, mediaType);
+  const overview = (detail && detail.overview) || basicItem.overview || '';
+  document.getElementById('modalGenres').innerHTML = genreNames.map(g=>`<span class="genre-chip">${g}</span>`).join('') || '';
+  document.getElementById('modalOverview').textContent = overview || '—';
+  renderWatchProviders(basicItem.id, mediaType, 'modalProviders');
+
+  let reviewsHtml = `<div class="modal-review-block">${t('noReviews')}</div>`;
+  if(reviews && reviews.results && reviews.results.length){
+    reviewsHtml = reviews.results.slice(0,2).map(r=>{
+      const content = r.content.length>280 ? r.content.slice(0,280)+'...' : r.content;
+      return `<div class="modal-review-block">"${content}"<br><strong>— ${r.author}</strong></div>`;
+    }).join('');
+  }
+
+  const item = {id:basicItem.id, title, poster_path:basicItem.poster_path,
+    release_date:basicItem.release_date||detail?.release_date, first_air_date:basicItem.first_air_date||detail?.first_air_date,
+    genre_ids:genreIds};
+  const existing = findEntry(basicItem.id, mediaType);
+  const status = existing ? existing.status : 'planned';
+  const rating = existing ? existing.rating : 0;
+  const reviewLang = existing ? existing.reviewLang : 'es';
+  const review = existing ? existing.review : '';
+  const year = (item.release_date||item.first_air_date||'').slice(0,4);
+
+  document.getElementById('modalForm').innerHTML = `
+    <button class="btn btn-ghost quick-seen-btn" id="btnQuickSeen">${t('markSeen')}</button>
+    <div class="field-row">
+      <div class="field">
+        <label>${t('statusLabel')}</label>
+        <select id="modalStatus">
+          <option value="planned" ${status==='planned'?'selected':''}>${t('planned')}</option>
+          <option value="watching" ${status==='watching'?'selected':''}>${t('watching')}</option>
+          <option value="completed" ${status==='completed'?'selected':''}>${t('completed')}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>${t('ratingLabel')}</label>
+        <select id="modalRating">
+          <option value="0" ${rating===0?'selected':''}>—</option>
+          <option value="1" ${rating===1?'selected':''}>★☆☆☆☆</option>
+          <option value="2" ${rating===2?'selected':''}>★★☆☆☆</option>
+          <option value="3" ${rating===3?'selected':''}>★★★☆☆</option>
+          <option value="4" ${rating===4?'selected':''}>★★★★☆</option>
+          <option value="5" ${rating===5?'selected':''}>★★★★★</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>${t('reviewLangLabel')}</label>
+      <select id="modalReviewLang">
+        <option value="es" ${reviewLang==='es'?'selected':''}>Español</option>
+        <option value="en" ${reviewLang==='en'?'selected':''}>English</option>
+      </select>
+      <div class="settings-note" style="margin-top:4px;">💡 ${t('grammarHint')}</div>
+    </div>
+    <div class="field">
+      <label>${t('reviewLabel')}</label>
+      <textarea id="modalReview" placeholder="${t('reviewPh')}">${review}</textarea>
+      <div id="modalGrammarBtnWrap" style="display:${reviewLang==='en'?'block':'none'};margin-top:6px;">
+        <button class="btn btn-ghost btn-sm" id="modalBtnCorrect">✏️ ${t('correctBtn')}</button>
+      </div>
+      <div id="modalGrammarResult"></div>
+    </div>
+    <button class="btn btn-primary" id="modalBtnSave">${t('save')}</button>
+    <div class="subhead" style="margin-top:22px;">${t('reviewsTitle')}<div class="dash"></div></div>
+    ${reviewsHtml}
+  `;
+
+  document.getElementById('modalReviewLang').addEventListener('change', (e)=>{
+    document.getElementById('modalGrammarBtnWrap').style.display = e.target.value==='en' ? 'block' : 'none';
+  });
+  document.getElementById('modalBtnCorrect').addEventListener('click', ()=>correctGrammarGeneric('modalReview','modalGrammarResult'));
+  document.getElementById('btnQuickSeen').addEventListener('click', ()=>{
+    document.getElementById('modalStatus').value='completed';
+  });
+  document.getElementById('modalBtnSave').addEventListener('click', ()=>{
+    const entry = {
+      tmdbId:item.id, mediaType, title, poster:item.poster_path, year,
+      genreIds, status:document.getElementById('modalStatus').value,
+      rating:parseInt(document.getElementById('modalRating').value),
+      reviewLang:document.getElementById('modalReviewLang').value,
+      review:document.getElementById('modalReview').value.trim()
+    };
+    upsertEntry(entry);
+    renderPersonalized();
+    closeModal();
+  });
+}
+
+/* =========================================================
+   GRAMMAR CORRECTION (generic, reused by modal)
+========================================================= */
+async function correctGrammarGeneric(textareaId, resultBoxId){
+  const text = document.getElementById(textareaId).value.trim();
+  const resultBox = document.getElementById(resultBoxId);
+  if(!text) return;
+  if(!OR_KEY){ resultBox.innerHTML = `<div class="grammar-box">${t('keyMissing')}: OpenRouter</div>`; return; }
+  resultBox.innerHTML = `<div class="grammar-box"><span class="loader"></span> ${t('correcting')}</div>`;
+  try{
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+OR_KEY },
+      body: JSON.stringify({
+        model: OR_MODEL,
+        messages:[
+          {role:'system', content:'You are an English grammar corrector for a language learner. Correct grammar, spelling and natural phrasing of the text the user gives you. Respond with ONLY the corrected text, nothing else, no quotes, no explanation.'},
+          {role:'user', content:text}
+        ]
+      })
+    });
+    const data = await res.json();
+    const corrected = data.choices && data.choices[0] ? data.choices[0].message.content.trim() : null;
+    if(corrected){
+      saveVocabCard(text, corrected);
+      renderBadges();
+      if(document.getElementById('vocabPractice')) renderVocabPractice();
+      resultBox.innerHTML = `<div class="grammar-box"><div class="gb-label">${t('suggestion')}</div>${corrected}
+        <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" id="btnUseCorrection_${textareaId}">✓ ${LANG==='es'?'Usar esta versión':'Use this version'}</button></div></div>`;
+      document.getElementById('btnUseCorrection_'+textareaId).addEventListener('click', ()=>{
+        document.getElementById(textareaId).value = corrected;
+        resultBox.innerHTML='';
+      });
+    }else{
+      resultBox.innerHTML = `<div class="grammar-box">⚠️ ${data.error ? data.error.message : 'No response'}</div>`;
+    }
+  }catch(e){
+    resultBox.innerHTML = `<div class="grammar-box">⚠️ ${e.message}</div>`;
+  }
+}
+
+/* =========================================================
+   MY LIST RENDER + FILTER
+========================================================= */
+document.querySelectorAll('.filter-pill').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.filter-pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    LIST_FILTER = btn.dataset.f;
+    renderMyList();
+  });
+});
+['filterGenre','filterYear','filterRating'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', renderMyList);
+});
+
+function populateListFilters(){
+  const genreSel = document.getElementById('filterGenre');
+  const yearSel = document.getElementById('filterYear');
+  const curGenre = genreSel.value, curYear = yearSel.value;
+  const genreIds = new Set();
+  const years = new Set();
+  MY_LIST.forEach(m=>{
+    (m.genreIds||[]).forEach(g=>genreIds.add(g));
+    if(m.year) years.add(m.year);
+  });
+  genreSel.innerHTML = `<option value="">—</option>` + Array.from(genreIds).map(gid=>{
+    const nameMovie = GENRE_MAP.movie[gid], nameTv = GENRE_MAP.tv[gid];
+    const label = nameMovie || nameTv || gid;
+    return `<option value="${gid}">${label}</option>`;
+  }).join('');
+  yearSel.innerHTML = `<option value="">—</option>` + Array.from(years).sort((a,b)=>b-a).map(y=>`<option value="${y}">${y}</option>`).join('');
+  genreSel.value = curGenre; yearSel.value = curYear;
+}
+['filterGenre','filterYear','filterRating'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', renderMyList);
+});
+
+function renderMyList(){
+  const container = document.getElementById('myListContainer');
+  const genreFilter = document.getElementById('filterGenre') ? document.getElementById('filterGenre').value : '';
+  const yearFilter = document.getElementById('filterYear') ? document.getElementById('filterYear').value : '';
+  const ratingFilter = document.getElementById('filterRating') ? parseInt(document.getElementById('filterRating').value||'0') : 0;
+  const filtered = MY_LIST.filter(m=>{
+    if(LIST_FILTER!=='all' && m.mediaType!==LIST_FILTER) return false;
+    if(genreFilter && !(m.genreIds||[]).map(String).includes(genreFilter)) return false;
+    if(yearFilter && m.year!==yearFilter) return false;
+    if(ratingFilter && (m.rating||0) < ratingFilter) return false;
+    return true;
+  });
+  if(!filtered.length){
+    container.innerHTML = `<div class="empty-state"><span class="emoji">🎟️</span>${t('emptyList')}</div>`;
+    return;
+  }
+  container.innerHTML='';
+  filtered.forEach(entry=>{
+    const stars = entry.rating>0 ? '★'.repeat(entry.rating)+'☆'.repeat(5-entry.rating) : '';
+    const statusClass = 'status-'+entry.status;
+    const statusLabel = t(entry.status);
+    const div = document.createElement('div');
+    div.className='ticket';
+    div.innerHTML = `
+      <img class="ticket-poster" src="${posterUrl(entry.poster)}">
+      <div class="ticket-perf"></div>
+      <div class="ticket-body">
+        <div class="ticket-top">
+          <div>
+            <div class="ticket-title">${entry.title} <span class="ticket-tag">${entry.year || ''} · ${entry.mediaType==='movie'?'🎬':'📺'}</span></div>
+            ${stars ? `<div class="stars">${stars}</div>` : ''}
+          </div>
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
+        </div>
+        ${entry.review ? `<div class="ticket-review">"${entry.review}"</div>` : ''}
+        <div class="ticket-actions">
+          <button class="btn btn-ghost btn-sm" data-edit="${entry.tmdbId}" data-media="${entry.mediaType}">✏️ ${LANG==='es'?'Editar':'Edit'}</button>
+          <button class="btn btn-ghost btn-sm" data-del="${entry.tmdbId}" data-media="${entry.mediaType}">🗑️ ${LANG==='es'?'Eliminar':'Delete'}</button>
+        </div>
+      </div>
+    `;
+    div.querySelector('.ticket-poster').addEventListener('click', ()=>openModal({id:entry.tmdbId,title:entry.title,poster_path:entry.poster,release_date:entry.mediaType==='movie'?entry.year+'-01-01':null,first_air_date:entry.mediaType==='tv'?entry.year+'-01-01':null,genre_ids:entry.genreIds}, entry.mediaType));
+    div.querySelector('.ticket-title').addEventListener('click', ()=>openModal({id:entry.tmdbId,title:entry.title,poster_path:entry.poster,release_date:entry.mediaType==='movie'?entry.year+'-01-01':null,first_air_date:entry.mediaType==='tv'?entry.year+'-01-01':null,genre_ids:entry.genreIds}, entry.mediaType));
+    container.appendChild(div);
+  });
+  container.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const e = findEntry(parseInt(btn.dataset.edit), btn.dataset.media);
+      if(e) openModal({id:e.tmdbId,title:e.title,poster_path:e.poster,release_date:e.mediaType==='movie'?e.year+'-01-01':null,first_air_date:e.mediaType==='tv'?e.year+'-01-01':null,genre_ids:e.genreIds}, e.mediaType);
+    });
+  });
+  container.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = parseInt(btn.dataset.del), media=btn.dataset.media;
+      MY_LIST = MY_LIST.filter(m=>!(m.tmdbId===id && m.mediaType===media));
+      localStorage.setItem('ct_mylist', JSON.stringify(MY_LIST));
+      renderStats();
+      renderMyList();
+      renderPersonalized();
+      renderWatchedStrip();
+      renderBecauseYouWatched();
+      renderProfile();
+      populateListFilters();
+    });
+  });
+}
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+function renderSettings(){
+  document.getElementById('tmdbKeyInput').value = TMDB_KEY;
+  document.getElementById('orKeyInput').value = OR_KEY;
+  document.getElementById('modelInput').value = OR_MODEL;
+  updateKeyStatus();
+}
+function updateKeyStatus(){
+  document.getElementById('tmdbDot').className = 'dot ' + (TMDB_KEY ? 'ok':'bad');
+  document.getElementById('tmdbStatusText').textContent = TMDB_KEY ? t('keyOk') : t('keyMissing');
+  document.getElementById('orDot').className = 'dot ' + (OR_KEY ? 'ok':'bad');
+  document.getElementById('orStatusText').textContent = OR_KEY ? t('keyOk') : t('keyMissing');
+}
+document.getElementById('btnSaveKeys').addEventListener('click', async ()=>{
+  TMDB_KEY = document.getElementById('tmdbKeyInput').value.trim();
+  OR_KEY = document.getElementById('orKeyInput').value.trim();
+  OR_MODEL = document.getElementById('modelInput').value.trim() || 'deepseek/deepseek-chat';
+  localStorage.setItem('ct_tmdb_key', TMDB_KEY);
+  localStorage.setItem('ct_or_key', OR_KEY);
+  localStorage.setItem('ct_or_model', OR_MODEL);
+  updateKeyStatus();
+  await loadGenreMaps();
+  loadPremieres();
+  loadTicker();
+  renderPersonalized();
+});
+
+/* =========================================================
+   STREAK
+========================================================= */
+function computeStreak(){
+  const log = new Set(JSON.parse(localStorage.getItem('ct_activity')||'[]'));
+  let streak=0;
+  let cursor = new Date();
+  const todayStr = cursor.toISOString().slice(0,10);
+  if(!log.has(todayStr)) cursor.setDate(cursor.getDate()-1);
+  while(true){
+    const s = cursor.toISOString().slice(0,10);
+    if(log.has(s)){ streak++; cursor.setDate(cursor.getDate()-1); } else break;
+  }
+  return streak;
+}
+
+function computeLongestStreak(){
+  const days = JSON.parse(localStorage.getItem('ct_activity')||'[]').slice().sort();
+  if(!days.length) return 0;
+  let longest=1, current=1;
+  for(let i=1;i<days.length;i++){
+    const prev = new Date(days[i-1]);
+    const cur = new Date(days[i]);
+    const diff = Math.round((cur-prev)/86400000);
+    if(diff===1){ current++; longest=Math.max(longest,current); }
+    else if(diff>1){ current=1; }
+  }
+  return longest;
+}
+
+/* =========================================================
+   TASTE CHART
+========================================================= */
+function renderTasteChart(){
+  const el = document.getElementById('tasteChart');
+  const counts = {};
+  MY_LIST.filter(m=>m.status==='completed').forEach(m=>{
+    (m.genreIds||[]).forEach(gid=>{
+      const name = GENRE_MAP[m.mediaType] ? GENRE_MAP[m.mediaType][gid] : null;
+      if(name) counts[name] = (counts[name]||0)+1;
+    });
+  });
+  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(!entries.length){ el.innerHTML = `<div class="empty-state">${t('tasteEmpty')}</div>`; return; }
+  const max = entries[0][1];
+  el.innerHTML = entries.map(([name,count])=>`
+    <div class="taste-bar-row">
+      <div class="taste-bar-label">${name}</div>
+      <div class="taste-bar-track"><div class="taste-bar-fill" style="width:${Math.max(6,(count/max*100))}%;"></div></div>
+      <div class="taste-bar-count">${count}</div>
+    </div>`).join('');
+}
+
+/* =========================================================
+   "TU AÑO EN CINE" (WRAPPED)
+========================================================= */
+const MONTH_NAMES = {
+  es:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+  en:['January','February','March','April','May','June','July','August','September','October','November','December']
+};
+
+function renderWrapped(){
+  const sel = document.getElementById('wrappedYearSelect');
+  const completed = MY_LIST.filter(m=>m.status==='completed' && m.dateAdded);
+  const years = Array.from(new Set(completed.map(m=>new Date(m.dateAdded).getFullYear()))).sort((a,b)=>b-a);
+  const curVal = sel.value;
+  sel.innerHTML = `<option value="all">${t('wrappedAllTime')}</option>` + years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if(curVal && (curVal==='all' || years.includes(parseInt(curVal)))) sel.value = curVal;
+  renderWrappedContent();
+}
+
+function renderWrappedContent(){
+  const sel = document.getElementById('wrappedYearSelect');
+  const yearVal = sel.value || 'all';
+  const container = document.getElementById('wrappedContent');
+  let pool = MY_LIST.filter(m=>m.status==='completed' && m.dateAdded);
+  if(yearVal!=='all') pool = pool.filter(m=>new Date(m.dateAdded).getFullYear()===parseInt(yearVal));
+
+  if(!pool.length){ container.innerHTML = `<div class="empty-state">${t('wrappedEmpty')}</div>`; return; }
+
+  const favorite = [...pool].sort((a,b)=>(b.rating||0)-(a.rating||0))[0];
+  const genreCount = {};
+  pool.forEach(m=>(m.genreIds||[]).forEach(gid=>{
+    const name = GENRE_MAP[m.mediaType] ? GENRE_MAP[m.mediaType][gid] : null;
+    if(name) genreCount[name]=(genreCount[name]||0)+1;
+  }));
+  const topGenre = Object.entries(genreCount).sort((a,b)=>b[1]-a[1])[0];
+  const monthCount = {};
+  pool.forEach(m=>{
+    const mIdx = new Date(m.dateAdded).getMonth();
+    monthCount[mIdx] = (monthCount[mIdx]||0)+1;
+  });
+  const topMonthEntry = Object.entries(monthCount).sort((a,b)=>b[1]-a[1])[0];
+  const topMonthName = topMonthEntry ? MONTH_NAMES[LANG][parseInt(topMonthEntry[0])] : '—';
+  const reviewsCount = pool.filter(m=>m.review && m.review.trim()).length;
+  const vocabCount = JSON.parse(localStorage.getItem('ct_vocab')||'[]').length;
+  const longest = computeLongestStreak();
+
+  container.innerHTML = `
+    <div class="wrapped-hero">
+      <img src="${posterUrl(favorite.poster)}">
+      <div>
+        <div class="settings-note" style="margin-bottom:2px;">${t('wrappedFavTitle')}</div>
+        <div class="wrapped-hero-title">${favorite.title}</div>
+        ${favorite.rating>0 ? `<div class="stars">${'★'.repeat(favorite.rating)}${'☆'.repeat(5-favorite.rating)}</div>` : ''}
+      </div>
+    </div>
+    <div class="wrapped-grid">
+      <div class="wrapped-stat"><div class="ws-num">${pool.length}</div><div class="ws-label">${t('wrappedTotal')}</div></div>
+      <div class="wrapped-stat"><div class="ws-num" style="font-size:1.1rem;">${topGenre ? topGenre[0] : '—'}</div><div class="ws-label">${t('wrappedTopGenre')}</div></div>
+      <div class="wrapped-stat"><div class="ws-num" style="font-size:1.1rem;">${topMonthName}</div><div class="ws-label">${t('wrappedActiveMonth')}</div></div>
+      <div class="wrapped-stat"><div class="ws-num">🔥 ${longest}</div><div class="ws-label">${t('wrappedLongestStreak')} (${t('wrappedDays')})</div></div>
+      <div class="wrapped-stat"><div class="ws-num">${reviewsCount}</div><div class="ws-label">${t('wrappedReviews')}</div></div>
+      <div class="wrapped-stat"><div class="ws-num">${vocabCount}</div><div class="ws-label">${t('wrappedVocab')}</div></div>
+    </div>
+  `;
+}
+document.getElementById('wrappedYearSelect').addEventListener('change', renderWrappedContent);
+
+/* =========================================================
+   WEEKLY AI RECAP
+========================================================= */
+function renderWeeklyRecap(){
+  const container = document.getElementById('recapContent');
+  const btn = document.getElementById('btnGenRecap');
+  const cached = JSON.parse(localStorage.getItem('ct_weekly_recap')||'null');
+  if(cached && cached.text){
+    const genDate = new Date(cached.generatedAt);
+    container.innerHTML = `<div class="recap-box">${cached.text}</div><div class="recap-date">${t('recapGeneratedOn')} ${genDate.toLocaleDateString(LANG==='es'?'es-ES':'en-US')}</div>`;
+    btn.innerHTML = t('recapBtnRegen');
+  } else {
+    container.innerHTML = '';
+    btn.innerHTML = t('recapBtn');
+  }
+}
+
+async function generateWeeklyRecap(){
+  const btn = document.getElementById('btnGenRecap');
+  const container = document.getElementById('recapContent');
+  const weekAgo = Date.now() - 7*86400000;
+  const recent = MY_LIST.filter(m=>m.dateAdded && new Date(m.dateAdded).getTime()>=weekAgo);
+  if(!recent.length){ container.innerHTML = `<div class="empty-state">${t('recapEmpty')}</div>`; return; }
+  if(!OR_KEY){ container.innerHTML = `<div class="grammar-box">${t('keyMissing')}: OpenRouter</div>`; return; }
+  btn.disabled = true;
+  container.innerHTML = `<div class="empty-state"><span class="loader"></span> ${t('recapGenerating')}</div>`;
+  const streak = computeStreak();
+  const summary = recent.map(m=>{
+    const genreNames = genreNamesFor(m.genreIds, m.mediaType);
+    return `- ${m.title} (${m.mediaType==='movie'?'película':'serie'}, estado: ${m.status}, calificación: ${m.rating||'sin calificar'}${genreNames.length?', géneros: '+genreNames.join(', '):''})`;
+  }).join('\n');
+  const langInstruction = LANG==='es' ? 'Responde en español.' : 'Respond in English.';
+  try{
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+OR_KEY },
+      body: JSON.stringify({
+        model: OR_MODEL,
+        messages:[
+          {role:'system', content:`You are a friendly, upbeat movie/TV recap coach for a personal tracking app. Given a list of titles the user interacted with this week and their current streak, write a short (3-5 sentences), warm, motivating recap. Mention patterns you notice (genres, ratings) and end with one light suggestion of what they could try next. ${langInstruction} Do not use markdown formatting, just plain text.`},
+          {role:'user', content:`Racha actual: ${streak} días.\nActividad de la semana:\n${summary}`}
+        ]
+      })
+    });
+    const data = await res.json();
+    const text = data.choices && data.choices[0] ? data.choices[0].message.content.trim() : null;
+    if(text){
+      localStorage.setItem('ct_weekly_recap', JSON.stringify({text, generatedAt:new Date().toISOString()}));
+      renderWeeklyRecap();
+    } else {
+      container.innerHTML = `<div class="grammar-box">⚠️ ${t('recapError')}</div>`;
+    }
+  }catch(e){
+    container.innerHTML = `<div class="grammar-box">⚠️ ${e.message}</div>`;
+  }
+  btn.disabled = false;
+}
+document.getElementById('btnGenRecap').addEventListener('click', generateWeeklyRecap);
+
+/* =========================================================
+   BADGES / ACHIEVEMENTS
+========================================================= */
+function getBadgeDefs(){
+  const completed = MY_LIST.filter(m=>m.status==='completed');
+  const movies = completed.filter(m=>m.mediaType==='movie');
+  const series = completed.filter(m=>m.mediaType==='tv');
+  const reviews = MY_LIST.filter(m=>m.review && m.review.trim().length>0);
+  const reviewsEs = reviews.filter(m=>m.reviewLang==='es');
+  const reviewsEn = reviews.filter(m=>m.reviewLang==='en');
+  const ratedAny = MY_LIST.filter(m=>m.rating>0);
+  const rated5 = MY_LIST.filter(m=>m.rating===5);
+  const streak = computeStreak();
+  const vocabCards = JSON.parse(localStorage.getItem('ct_vocab')||'[]');
+  const vocabMastered = vocabCards.filter(c=>(c.box||1)>=6).length;
+  const moodsUsed = JSON.parse(localStorage.getItem('ct_moods_used')||'[]').length;
+
+  const genreCountById = {};
+  completed.forEach(m=>(m.genreIds||[]).forEach(gid=> genreCountById[gid]=(genreCountById[gid]||0)+1));
+  const gc = (ids)=> ids.reduce((sum,id)=>sum+(genreCountById[id]||0),0);
+
+  const decadeOf = (y)=>{ const n=parseInt(y); if(!n) return null; if(n<1980) return 'pre80'; if(n<1990) return '80s'; if(n<2000) return '90s'; if(n<2010) return '00s'; if(n<2020) return '10s'; return '20s'; };
+  const decadesSeen = new Set(completed.map(m=>decadeOf(m.year)).filter(Boolean));
+  const distinctGenreCount = Object.keys(genreCountById).length;
+
+  const defs = [
+    // ===== PROGRESO GENERAL =====
+    {cat:'progress', icon:'🎬', threshold:5, value:completed.length, title:{es:'Cinéfilo iniciado',en:'Movie starter'}, desc:{es:'títulos vistos',en:'titles watched'}},
+    {cat:'progress', icon:'🍿', threshold:15, value:completed.length, title:{es:'Cinéfilo aficionado',en:'Casual buff'}, desc:{es:'títulos vistos',en:'titles watched'}},
+    {cat:'progress', icon:'🏅', threshold:30, value:completed.length, title:{es:'Cinéfilo dedicado',en:'Dedicated viewer'}, desc:{es:'títulos vistos',en:'titles watched'}},
+    {cat:'progress', icon:'🏆', threshold:60, value:completed.length, title:{es:'Maratonista',en:'Marathoner'}, desc:{es:'títulos vistos',en:'titles watched'}},
+    {cat:'progress', icon:'👑', threshold:100, value:completed.length, title:{es:'Leyenda del cine',en:'Cinema legend'}, desc:{es:'títulos vistos',en:'titles watched'}},
+    {cat:'progress', icon:'🎞️', threshold:10, value:movies.length, title:{es:'Amante del cine',en:'Movie lover'}, desc:{es:'películas vistas',en:'movies watched'}},
+    {cat:'progress', icon:'🎥', threshold:25, value:movies.length, title:{es:'Devorador de películas',en:'Movie devourer'}, desc:{es:'películas vistas',en:'movies watched'}},
+    {cat:'progress', icon:'📺', threshold:5, value:series.length, title:{es:'Explorador de series',en:'Series explorer'}, desc:{es:'series vistas',en:'series watched'}},
+    {cat:'progress', icon:'🍕', threshold:15, value:series.length, title:{es:'Bingewatcher',en:'Bingewatcher'}, desc:{es:'series vistas',en:'series watched'}},
+    {cat:'progress', icon:'🎨', threshold:5, value:distinctGenreCount, title:{es:'Gustos eclécticos',en:'Eclectic taste'}, desc:{es:'géneros distintos',en:'different genres'}},
+    {cat:'progress', icon:'🕰️', threshold:3, value:decadesSeen.size, title:{es:'Viajero del tiempo',en:'Time traveler'}, desc:{es:'décadas distintas',en:'different decades'}},
+
+    // ===== HÁBITOS Y RACHAS =====
+    {cat:'habits', icon:'🔥', threshold:3, value:streak, title:{es:'Racha activa',en:'On a streak'}, desc:{es:'días seguidos',en:'days in a row'}},
+    {cat:'habits', icon:'💪', threshold:7, value:streak, title:{es:'Semana completa',en:'Full week'}, desc:{es:'días seguidos',en:'days in a row'}},
+    {cat:'habits', icon:'🚀', threshold:14, value:streak, title:{es:'Imparable',en:'Unstoppable'}, desc:{es:'días seguidos',en:'days in a row'}},
+    {cat:'habits', icon:'🌟', threshold:30, value:streak, title:{es:'Hábito de hierro',en:'Iron habit'}, desc:{es:'días seguidos',en:'days in a row'}},
+    {cat:'habits', icon:'🎭', threshold:8, value:moodsUsed, title:{es:'Explorador de moods',en:'Mood explorer'}, desc:{es:'moods distintos probados',en:'different moods tried'}},
+
+    // ===== CALIFICACIONES Y RESEÑAS =====
+    {cat:'reviews', icon:'⭐', threshold:10, value:ratedAny.length, title:{es:'Juez cinéfilo',en:'Movie judge'}, desc:{es:'títulos calificados',en:'titles rated'}},
+    {cat:'reviews', icon:'🌠', threshold:5, value:rated5.length, title:{es:'Fan absoluto',en:'Superfan'}, desc:{es:'calificaciones de 5 estrellas',en:'5-star ratings'}},
+    {cat:'reviews', icon:'✍️', threshold:5, value:reviews.length, title:{es:'Reseñista',en:'Reviewer'}, desc:{es:'reseñas escritas',en:'reviews written'}},
+    {cat:'reviews', icon:'📝', threshold:20, value:reviews.length, title:{es:'Crítico oficial',en:'Official critic'}, desc:{es:'reseñas escritas',en:'reviews written'}},
+    {cat:'reviews', icon:'🌐', threshold:1, value:(reviewsEs.length>0 && reviewsEn.length>0)?1:0, title:{es:'Bilingüe',en:'Bilingual'}, desc:{es:'reseñas en ES y EN',en:'reviews in ES and EN'}},
+
+    // ===== IDIOMA Y VOCABULARIO =====
+    {cat:'language', icon:'🇬🇧', threshold:3, value:reviewsEn.length, title:{es:'Practicando inglés',en:'Practicing English'}, desc:{es:'reseñas en inglés',en:'English reviews'}},
+    {cat:'language', icon:'📚', threshold:10, value:reviewsEn.length, title:{es:'Estudiante aplicado',en:'Diligent student'}, desc:{es:'reseñas en inglés',en:'English reviews'}},
+    {cat:'language', icon:'🧠', threshold:5, value:vocabCards.length, title:{es:'Coleccionista de vocabulario',en:'Vocabulary collector'}, desc:{es:'tarjetas creadas',en:'cards created'}},
+    {cat:'language', icon:'📖', threshold:20, value:vocabCards.length, title:{es:'Biblioteca personal',en:'Personal library'}, desc:{es:'tarjetas creadas',en:'cards created'}},
+    {cat:'language', icon:'💡', threshold:5, value:vocabMastered, title:{es:'Palabra dominada',en:'Word mastered'}, desc:{es:'tarjetas dominadas',en:'cards mastered'}},
+
+    // ===== GÉNEROS FAVORITOS =====
+    {cat:'genres', icon:'👻', threshold:5, value:gc([27]), title:{es:'Fan del terror',en:'Horror fan'}, desc:{es:'títulos de terror',en:'horror titles'}},
+    {cat:'genres', icon:'😂', threshold:5, value:gc([35]), title:{es:'Buscador de risas',en:'Laughter seeker'}, desc:{es:'comedias vistas',en:'comedies watched'}},
+    {cat:'genres', icon:'🎭', threshold:5, value:gc([18]), title:{es:'Alma dramática',en:'Dramatic soul'}, desc:{es:'dramas vistos',en:'dramas watched'}},
+    {cat:'genres', icon:'💥', threshold:5, value:gc([28,10759]), title:{es:'Adicto a la adrenalina',en:'Adrenaline addict'}, desc:{es:'títulos de acción',en:'action titles'}},
+    {cat:'genres', icon:'💕', threshold:5, value:gc([10749]), title:{es:'Romántico empedernido',en:'Hopeless romantic'}, desc:{es:'romances vistos',en:'romance titles'}},
+    {cat:'genres', icon:'🚀', threshold:5, value:gc([878,10765]), title:{es:'Viajero espacial',en:'Space traveler'}, desc:{es:'ciencia ficción',en:'sci-fi titles'}},
+    {cat:'genres', icon:'🧸', threshold:5, value:gc([16]), title:{es:'Corazón de niño',en:'Kid at heart'}, desc:{es:'animación vista',en:'animation watched'}},
+    {cat:'genres', icon:'🔎', threshold:5, value:gc([9648]), title:{es:'Detective nato',en:'Born detective'}, desc:{es:'misterios vistos',en:'mysteries watched'}},
+    {cat:'genres', icon:'😨', threshold:5, value:gc([53]), title:{es:'Nervios de acero',en:'Nerves of steel'}, desc:{es:'suspenso visto',en:'thrillers watched'}},
+    {cat:'genres', icon:'👨‍👩‍👧', threshold:5, value:gc([10751]), title:{es:'Noche familiar',en:'Family night'}, desc:{es:'títulos familiares',en:'family titles'}},
+    {cat:'genres', icon:'🔫', threshold:5, value:gc([80]), title:{es:'Bajo mundo',en:'Underworld'}, desc:{es:'títulos de crimen',en:'crime titles'}},
+    {cat:'genres', icon:'🎬', threshold:3, value:gc([99]), title:{es:'Buscador de verdades',en:'Truth seeker'}, desc:{es:'documentales vistos',en:'documentaries watched'}},
+
+    // ===== ÉPOCAS =====
+    {cat:'decades', icon:'🕯️', threshold:1, value:decadesSeen.has('pre80')?1:0, title:{es:'Arqueólogo del cine',en:'Cinema archaeologist'}, desc:{es:'algo de antes de 1980',en:'something pre-1980'}},
+    {cat:'decades', icon:'📼', threshold:1, value:decadesSeen.has('80s')?1:0, title:{es:'Ochentero',en:'80s kid'}, desc:{es:'algo de los 80',en:'something from the 80s'}},
+    {cat:'decades', icon:'💿', threshold:1, value:decadesSeen.has('90s')?1:0, title:{es:'Noventero',en:'90s kid'}, desc:{es:'algo de los 90',en:'something from the 90s'}},
+    {cat:'decades', icon:'📀', threshold:1, value:decadesSeen.has('00s')?1:0, title:{es:'Y2K',en:'Y2K'}, desc:{es:'algo de los 2000',en:'something from the 2000s'}},
+    {cat:'decades', icon:'📱', threshold:1, value:decadesSeen.has('10s')?1:0, title:{es:'Década 2010',en:'2010s decade'}, desc:{es:'algo de los 2010',en:'something from the 2010s'}},
+    {cat:'decades', icon:'✨', threshold:1, value:decadesSeen.has('20s')?1:0, title:{es:'Al día',en:'Up to date'}, desc:{es:'algo de esta década',en:'something from this decade'}},
+  ];
+  return defs;
+}
+
+function renderBadges(){
+  const grid = document.getElementById('badgesGrid');
+  const defs = getBadgeDefs();
+  const cats = [
+    {key:'progress', label:t('catProgress')},
+    {key:'habits', label:t('catHabits')},
+    {key:'reviews', label:t('catReviews')},
+    {key:'language', label:t('catLanguage')},
+    {key:'genres', label:t('catGenres')},
+    {key:'decades', label:t('catDecades')}
+  ];
+  const totalUnlocked = defs.filter(b=>b.value>=b.threshold).length;
+  let html = `<div class="settings-note" style="margin-bottom:14px;">${t('badgesUnlockedOf').replace('{n}',totalUnlocked).replace('{total}',defs.length)}</div>`;
+  cats.forEach(cat=>{
+    const items = defs.filter(b=>b.cat===cat.key);
+    if(!items.length) return;
+    html += `<div class="subhead">${cat.label}<div class="dash"></div></div>`;
+    html += `<div class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-bottom:8px;">`;
+    html += items.map(b=>{
+      const unlocked = b.value >= b.threshold;
+      return `<div class="badge-card ${unlocked?'unlocked':''}">
+        <span class="badge-icon">${b.icon}</span>
+        <div class="badge-title">${b.title[LANG]}</div>
+        <div class="badge-desc">${Math.min(b.value,b.threshold)}/${b.threshold} ${b.desc[LANG]}</div>
+      </div>`;
+    }).join('');
+    html += `</div>`;
+  });
+  grid.innerHTML = html;
+}
+
+function renderStreakRow(){
+  const streak = computeStreak();
+  const completed = MY_LIST.filter(m=>m.status==='completed').length;
+  const unlockedBadges = getBadgeDefs().filter(b=>b.value>=b.threshold).length;
+  document.getElementById('streakRow').innerHTML = `
+    <div class="stat-card gold"><div class="stat-num">🔥 ${streak}</div><div class="stat-label">${t('streakLabel')} (${t('streakDaysLabel')})</div></div>
+    <div class="stat-card green"><div class="stat-num">${completed}</div><div class="stat-label">${t('totalWatchedBadge')}</div></div>
+    <div class="stat-card pink"><div class="stat-num">${unlockedBadges}/${getBadgeDefs().length}</div><div class="stat-label">${t('badgesH')}</div></div>
+  `;
+}
+
+function renderProfile(){
+  renderStreakRow();
+  renderTasteChart();
+  renderBadges();
+  renderVocabPractice();
+  renderWrapped();
+  renderWeeklyRecap();
+}
+
+/* =========================================================
+   SORPRÉNDEME
+========================================================= */
+document.getElementById('btnSurpriseMe').addEventListener('click', surpriseMe);
+async function surpriseMe(){
+  const btn = document.getElementById('btnSurpriseMe');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="loader"></span>`;
+  try{
+    const movieGenres = topGenresFrom('movie');
+    const tvGenres = topGenresFrom('tv');
+    let candidates = [];
+    if(movieGenres.length || tvGenres.length){
+      const [m,s] = await Promise.all([
+        movieGenres.length ? discoverMany('movie', movieGenres, {pages:2}) : [],
+        tvGenres.length ? discoverMany('tv', tvGenres, {pages:2}) : []
+      ]);
+      candidates = [...m.map(x=>({...x, __mt:'movie'})), ...s.map(x=>({...x, __mt:'tv'}))];
+    }
+    if(!candidates.length){
+      const trending = await tmdb('/trending/all/week', {});
+      const completedMovie = completedIdSet('movie'), completedTv = completedIdSet('tv');
+      candidates = (trending.results||[]).filter(r=>{
+        if(r.media_type==='movie') return !completedMovie.has(r.id);
+        if(r.media_type==='tv') return !completedTv.has(r.id);
+        return false;
+      }).map(r=>({...r, __mt:r.media_type}));
+    }
+    const surpriseHistory = new Set(JSON.parse(localStorage.getItem('ct_surprise_history')||'[]'));
+    let pool = candidates.filter(c=>!surpriseHistory.has(`${c.__mt}-${c.id}`));
+    if(!pool.length){ localStorage.setItem('ct_surprise_history','[]'); pool = candidates; }
+    if(!pool.length){ btn.disabled=false; btn.innerHTML = '🎲 '+t('surpriseBtn'); return; }
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    let hist = Array.from(surpriseHistory); hist.push(`${pick.__mt}-${pick.id}`);
+    if(hist.length>150) hist = hist.slice(hist.length-150);
+    localStorage.setItem('ct_surprise_history', JSON.stringify(hist));
+    openModal(pick, pick.__mt);
+  }catch(e){
+    alert('⚠️ '+e.message);
+  }
+  btn.disabled = false;
+  btn.innerHTML = '🎲 '+t('surpriseBtn');
+}
+
+/* =========================================================
+   VOCABULARY TRAINER (from grammar corrections)
+========================================================= */
+function saveVocabCard(original, corrected){
+  if(!original || !corrected || original.trim()===corrected.trim()) return;
+  const cards = JSON.parse(localStorage.getItem('ct_vocab')||'[]');
+  cards.unshift({
+    id: Date.now(),
+    original, corrected,
+    box: 1,
+    nextReview: todayISO(),
+    created: new Date().toISOString()
+  });
+  localStorage.setItem('ct_vocab', JSON.stringify(cards.slice(0,200)));
+}
+
+const LEITNER_INTERVALS = [1,2,4,7,14,30];
+
+function renderVocabPractice(){
+  const container = document.getElementById('vocabPractice');
+  const countEl = document.getElementById('vocabDueCount');
+  if(!container) return;
+  const cards = JSON.parse(localStorage.getItem('ct_vocab')||'[]');
+  const today = todayISO();
+  const due = cards.filter(c=>c.nextReview<=today);
+  if(countEl) countEl.textContent = due.length + ' ' + t('vocabDueLabel');
+  if(!cards.length){ container.innerHTML = `<div class="empty-state">${t('vocabEmpty')}</div>`; return; }
+  if(!due.length){ container.innerHTML = `<div class="empty-state">🎉 ${t('vocabAllDone')}</div>`; return; }
+  container.innerHTML='';
+  due.slice(0,10).forEach(card=>{
+    const div = document.createElement('div');
+    div.className='vocab-card';
+    div.innerHTML = `
+      <div class="vocab-original"><strong>${LANG==='es'?'Tu texto':'Your text'}:</strong> "${card.original}"</div>
+      <div class="vocab-corrected" id="vc-${card.id}"><strong>${LANG==='es'?'Corrección':'Correction'}:</strong> "${card.corrected}"</div>
+      <div class="vocab-actions">
+        <button class="btn btn-ghost btn-sm" data-reveal="${card.id}">👁 ${t('vocabReveal')}</button>
+        <button class="btn btn-ghost btn-sm" data-know="${card.id}" style="display:none;">${t('vocabKnew')}</button>
+        <button class="btn btn-ghost btn-sm" data-hard="${card.id}" style="display:none;">${t('vocabStillHard')}</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  container.querySelectorAll('[data-reveal]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.reveal;
+      document.getElementById('vc-'+id).style.display='block';
+      btn.style.display='none';
+      const parent = btn.parentElement;
+      parent.querySelector(`[data-know="${id}"]`).style.display='inline-block';
+      parent.querySelector(`[data-hard="${id}"]`).style.display='inline-block';
+    });
+  });
+  container.querySelectorAll('[data-know]').forEach(btn=>{
+    btn.addEventListener('click', ()=>updateVocabCard(parseInt(btn.dataset.know), true));
+  });
+  container.querySelectorAll('[data-hard]').forEach(btn=>{
+    btn.addEventListener('click', ()=>updateVocabCard(parseInt(btn.dataset.hard), false));
+  });
+}
+
+function updateVocabCard(id, knewIt){
+  const cards = JSON.parse(localStorage.getItem('ct_vocab')||'[]');
+  const idx = cards.findIndex(c=>c.id===id);
+  if(idx<0) return;
+  let box = cards[idx].box || 1;
+  box = knewIt ? Math.min(box+1, LEITNER_INTERVALS.length) : 1;
+  const days = LEITNER_INTERVALS[box-1];
+  const next = new Date();
+  next.setDate(next.getDate()+days);
+  cards[idx].box = box;
+  cards[idx].nextReview = next.toISOString().slice(0,10);
+  localStorage.setItem('ct_vocab', JSON.stringify(cards));
+  renderVocabPractice();
+  renderBadges();
+  renderBadges();
+}
+
+/* =========================================================
+   WATCH PROVIDERS ("Dónde verla")
+========================================================= */
+async function renderWatchProviders(id, mediaType, targetElId){
+  const el = document.getElementById(targetElId);
+  if(!el) return;
+  try{
+    const data = await tmdb(`/${mediaType}/${id}/watch/providers`, {});
+    const results = data.results || {};
+    let region = results['VE'];
+    let note = '';
+    if(!region || !(region.flatrate || region.rent || region.buy)){
+      region = results['US'];
+      note = t('providersNote');
+    }
+    if(!region){ el.innerHTML = `<div class="settings-note">${t('noProviders')}</div>`; return; }
+    const all = [...(region.flatrate||[]), ...(region.rent||[]), ...(region.buy||[])];
+    const uniq = []; const seen = new Set();
+    all.forEach(p=>{ if(!seen.has(p.provider_id)){ seen.add(p.provider_id); uniq.push(p); } });
+    if(!uniq.length){ el.innerHTML = `<div class="settings-note">${t('noProviders')}</div>`; return; }
+    el.innerHTML = `<div class="subhead" style="margin-top:16px;">${t('providersTitle')}<div class="dash"></div></div>
+      <div class="provider-row">
+        ${uniq.map(p=>`<span class="provider-chip"><img src="https://image.tmdb.org/t/p/w45${p.logo_path}">${p.provider_name}</span>`).join('')}
+      </div>
+      ${note ? `<div class="settings-note" style="margin-top:4px;">${note}</div>` : ''}`;
+  }catch(e){
+    el.innerHTML='';
+  }
+}
+
+/* =========================================================
+   BACKUP (export / import)
+========================================================= */
+document.getElementById('btnExportBackup').addEventListener('click', ()=>{
+  const backup = {
+    version:1,
+    exportedAt:new Date().toISOString(),
+    mylist: MY_LIST,
+    vocab: JSON.parse(localStorage.getItem('ct_vocab')||'[]'),
+    activity: JSON.parse(localStorage.getItem('ct_activity')||'[]')
+  };
+  const blob = new Blob([JSON.stringify(backup,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cinetracker-backup-${todayISO()}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!data.mylist || !Array.isArray(data.mylist)) throw new Error('invalid');
+      MY_LIST = data.mylist;
+      localStorage.setItem('ct_mylist', JSON.stringify(MY_LIST));
+      if(data.vocab) localStorage.setItem('ct_vocab', JSON.stringify(data.vocab));
+      if(data.activity) localStorage.setItem('ct_activity', JSON.stringify(data.activity));
+      document.getElementById('importStatus').innerHTML = `<div class="grammar-box">${t('importSuccess')}</div>`;
+      renderStats(); renderMyList(); renderProfile(); populateListFilters();
+      renderWatchedStrip(); renderPersonalized(); renderBecauseYouWatched();
+    }catch(err){
+      document.getElementById('importStatus').innerHTML = `<div class="grammar-box">${t('importError')}</div>`;
+    }
+  };
+  reader.readAsText(file);
+});
+
+/* =========================================================
+   INIT
+========================================================= */
+(async function init(){
+  renderBulbs();
+  renderSettings();
+  await loadGenreMaps();
+  applyLang();
+})();
+</script>
+</body>
+</html>
